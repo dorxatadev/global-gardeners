@@ -41,7 +41,7 @@ export default function NewPostOnboardingPage() {
       <section className="mx-auto flex min-h-screen w-full max-w-[390px] flex-col overflow-hidden border border-[#e7e0d2] bg-[#f8f6f1] shadow-[0_24px_80px_rgba(56,71,45,0.12)]">
         <header className="flex items-center border-b border-black/10 bg-white p-4">
           <Link
-            href="/"
+            href="/onboarding"
             aria-label="Back"
             className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#f5f5f5] text-[#333333] transition hover:bg-[#ebebeb]"
           >

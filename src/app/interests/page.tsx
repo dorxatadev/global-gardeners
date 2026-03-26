@@ -87,7 +87,7 @@ export default function InterestsPage() {
             Global Gardeners
           </p>
           <Link
-            href="/"
+            href="/onboarding"
             className="inline-flex items-center gap-0.5 rounded-full px-2 py-1 text-[14px] font-medium text-[#333333] transition hover:bg-[#ebe6da]"
           >
             <span>Skip</span>
@@ -134,7 +134,7 @@ export default function InterestsPage() {
           <div className="mt-auto border-t border-[#e5e5e5] px-0 pb-4 pt-5">
             <p className="text-[14px] font-medium leading-6 text-[#333333cc]">{selectedCountMessage}</p>
             <Link
-              href="/"
+              href="/onboarding"
               aria-disabled={!canContinue}
               onClick={(event) => {
                 if (!canContinue) {

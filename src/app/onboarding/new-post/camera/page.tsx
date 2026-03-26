@@ -80,10 +80,13 @@ export default function CameraOnboardingPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const trackRef = useRef<MediaStreamTrack | null>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
+  const uploadedPhotoUrlRef = useRef<string | null>(null);
   const [cameraReady, setCameraReady] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [flashOn, setFlashOn] = useState(false);
   const [torchSupported, setTorchSupported] = useState(false);
+  const [uploadedPhotoUrl, setUploadedPhotoUrl] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -139,6 +142,11 @@ export default function CameraOnboardingPage() {
         streamRef.current = null;
       }
       trackRef.current = null;
+
+      if (uploadedPhotoUrlRef.current) {
+        URL.revokeObjectURL(uploadedPhotoUrlRef.current);
+        uploadedPhotoUrlRef.current = null;
+      }
     };
   }, []);
 
@@ -166,6 +174,20 @@ export default function CameraOnboardingPage() {
       return;
     }
     setFlashOn((current) => !current);
+  };
+
+  const handleGallerySelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (uploadedPhotoUrlRef.current) {
+      URL.revokeObjectURL(uploadedPhotoUrlRef.current);
+    }
+
+    const objectUrl = URL.createObjectURL(file);
+    uploadedPhotoUrlRef.current = objectUrl;
+    setUploadedPhotoUrl(objectUrl);
+    setErrorMessage("");
   };
 
   return (
@@ -200,15 +222,22 @@ export default function CameraOnboardingPage() {
         </header>
 
         <div className="relative flex-1 bg-black">
-          <video
-            ref={videoRef}
-            autoPlay
-            muted
-            playsInline
-            className={`absolute inset-0 block h-full w-full min-h-full min-w-full ${cameraReady ? "opacity-100" : "opacity-0"}`}
-            style={{ objectFit: "cover" }}
-          />
-          {!cameraReady ? (
+          {uploadedPhotoUrl ? (
+            <div
+              className="absolute inset-0 bg-center bg-cover"
+              style={{ backgroundImage: `url("${uploadedPhotoUrl}")` }}
+            />
+          ) : (
+            <video
+              ref={videoRef}
+              autoPlay
+              muted
+              playsInline
+              className={`absolute inset-0 block h-full w-full min-h-full min-w-full ${cameraReady ? "opacity-100" : "opacity-0"}`}
+              style={{ objectFit: "cover" }}
+            />
+          )}
+          {!cameraReady && !uploadedPhotoUrl ? (
             <div className="absolute inset-0 flex items-center justify-center px-6 text-center text-[14px] font-medium text-white/90">
               {errorMessage || "Starting camera..."}
             </div>
@@ -225,12 +254,20 @@ export default function CameraOnboardingPage() {
               type="button"
               className="justify-self-start rounded-lg px-1 py-1 text-[#333333]"
               aria-label="Open gallery"
+              onClick={() => galleryInputRef.current?.click()}
             >
               <span className="flex flex-col items-center gap-1 text-[12px] font-medium leading-4">
                 <GalleryIcon />
                 Gallery
               </span>
             </button>
+            <input
+              ref={galleryInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleGallerySelect}
+              className="hidden"
+            />
 
             <button
               type="button"

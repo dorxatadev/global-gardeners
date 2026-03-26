@@ -152,6 +152,7 @@ export default function LoginPage() {
       return;
     }
 
+    document.cookie = "gg_session=1; path=/; max-age=2592000; samesite=lax";
     router.push("/pricing");
   };
 
