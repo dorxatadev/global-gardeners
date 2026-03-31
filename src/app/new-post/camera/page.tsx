@@ -183,18 +183,34 @@ export default function CameraPage() {
     const files = event.target.files ? Array.from(event.target.files) : [];
     if (!files.length) return;
 
+    let shouldNavigateToNewPost = false;
+
     try {
       const dataUrls = await Promise.all(files.map((file) => fileToDataUrl(file)));
       const rawDraftPhotos = sessionStorage.getItem("ggDraftPostPhotos");
-      const draftPhotos = rawDraftPhotos ? (JSON.parse(rawDraftPhotos) as unknown) : [];
-      const existing = Array.isArray(draftPhotos)
-        ? draftPhotos.filter((value): value is string => typeof value === "string")
-        : [];
+      let existing: string[] = [];
+
+      if (rawDraftPhotos) {
+        try {
+          const draftPhotos = JSON.parse(rawDraftPhotos) as unknown;
+          if (Array.isArray(draftPhotos)) {
+            existing = draftPhotos.filter((value): value is string => typeof value === "string");
+          }
+        } catch {
+          existing = [];
+        }
+      }
+
       const merged = [...existing, ...dataUrls].slice(0, 5);
       sessionStorage.setItem("ggDraftPostPhotos", JSON.stringify(merged));
-      router.push("/new-post");
+      shouldNavigateToNewPost = true;
     } catch {
       setErrorMessage("Unable to load selected photos.");
+    } finally {
+      event.target.value = "";
+      if (shouldNavigateToNewPost) {
+        router.push("/new-post");
+      }
     }
   };
 
@@ -234,7 +250,7 @@ export default function CameraPage() {
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,_#fffdf7_0%,_#f8f6f1_50%,_#efe9dc_100%)] px-0 sm:grid sm:place-items-center sm:px-8">
       <section className="relative mx-auto flex min-h-screen w-full max-w-[390px] flex-col overflow-hidden border border-[#e7e0d2] bg-white shadow-[0_24px_80px_rgba(56,71,45,0.12)]">
-        <header className="sticky top-0 z-10 flex items-center justify-between border-b border-black/10 bg-white p-4">
+        <header className="fixed left-0 right-0 top-0 z-30 mx-auto flex w-full max-w-[390px] items-center justify-between border-b border-black/10 bg-white p-4">
           <Link
             href="/new-post"
             aria-label="Close camera"
@@ -263,7 +279,7 @@ export default function CameraPage() {
           </div>
         </header>
 
-        <div className="relative flex-1 bg-black">
+        <div className="relative flex-1 bg-black pt-[73px]">
           <video
             ref={videoRef}
             autoPlay
