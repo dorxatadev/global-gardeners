@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 
 type BillingCycle = "monthly" | "annual";
 
@@ -46,7 +47,35 @@ function CheckIcon() {
 }
 
 export default function PricingPage() {
+  const router = useRouter();
   const [billingCycle, setBillingCycle] = useState<BillingCycle>("monthly");
+  const [isSubmittingPlan, setIsSubmittingPlan] = useState(false);
+  const [planError, setPlanError] = useState("");
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function checkOnboardingStatus() {
+      const response = await fetch("/api/profile/onboarding-status");
+      if (!response.ok) {
+        return;
+      }
+
+      const status = (await response.json()) as { nextStep?: string };
+      if (!isMounted || !status.nextStep) {
+        return;
+      }
+
+      if (status.nextStep !== "/pricing") {
+        router.replace(status.nextStep);
+      }
+    }
+
+    void checkOnboardingStatus();
+    return () => {
+      isMounted = false;
+    };
+  }, [router]);
 
   const premiumPlan = useMemo(
     () =>
@@ -55,6 +84,37 @@ export default function PricingPage() {
         : { price: "$59.99", cadence: "/year", toggleOnAnnual: true },
     [billingCycle],
   );
+
+  const submitPlan = async (plan: "free" | "premium") => {
+    if (isSubmittingPlan) {
+      return;
+    }
+
+    setPlanError("");
+    setIsSubmittingPlan(true);
+
+    try {
+      const response = await fetch("/api/profile/subscription", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ plan }),
+      });
+
+      const result = (await response.json()) as { error?: string };
+      if (!response.ok) {
+        setPlanError(result.error ?? "Unable to set subscription.");
+        return;
+      }
+
+      router.push("/interests");
+    } catch {
+      setPlanError("Unable to set subscription.");
+    } finally {
+      setIsSubmittingPlan(false);
+    }
+  };
 
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,_#fffdf7_0%,_#f8f6f1_50%,_#efe9dc_100%)] px-4 py-0 text-[#182a17] sm:grid sm:place-items-center sm:px-8">
@@ -149,12 +209,16 @@ export default function PricingPage() {
                   </button>
                 </div>
 
-                <Link
-                  href="/interests"
-                  className="flex h-[52px] w-full items-center justify-center rounded-full bg-[#457941] text-[14px] font-medium leading-5 text-[#f4f1e8] transition hover:bg-[#3b6838] focus:outline-none focus:ring-2 focus:ring-[#457941] focus:ring-offset-2 focus:ring-offset-white"
+                <button
+                  type="button"
+                  disabled={isSubmittingPlan}
+                  onClick={() => {
+                    void submitPlan("premium");
+                  }}
+                  className="flex h-[52px] w-full items-center justify-center rounded-full bg-[#457941] text-[14px] font-medium leading-5 text-[#f4f1e8] transition hover:bg-[#3b6838] focus:outline-none focus:ring-2 focus:ring-[#457941] focus:ring-offset-2 focus:ring-offset-white disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  Start free trial
-                </Link>
+                  {isSubmittingPlan ? "Please wait..." : "Start free trial"}
+                </button>
 
                 <p className="text-center text-[14px] font-normal leading-5 text-[#333333cc]">
                   Cancel anytime
@@ -205,12 +269,16 @@ export default function PricingPage() {
                   Free
                 </p>
 
-                <Link
-                  href="/interests"
-                  className="flex h-[52px] w-full items-center justify-center rounded-full bg-[#f5f5f5] text-[14px] font-medium leading-5 text-[#333333] transition hover:bg-[#ececec] focus:outline-none focus:ring-2 focus:ring-[#457941] focus:ring-offset-2 focus:ring-offset-white"
+                <button
+                  type="button"
+                  disabled={isSubmittingPlan}
+                  onClick={() => {
+                    void submitPlan("free");
+                  }}
+                  className="flex h-[52px] w-full items-center justify-center rounded-full bg-[#f5f5f5] text-[14px] font-medium leading-5 text-[#333333] transition hover:bg-[#ececec] focus:outline-none focus:ring-2 focus:ring-[#457941] focus:ring-offset-2 focus:ring-offset-white disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  Continue with free
-                </Link>
+                  {isSubmittingPlan ? "Please wait..." : "Continue with free"}
+                </button>
 
                 <div className="space-y-4">
                   <p className="text-[16px] font-semibold leading-6 text-[#333333]">
@@ -238,6 +306,7 @@ export default function PricingPage() {
               </div>
             </article>
           </div>
+          {planError ? <p className="text-[12px] leading-4 text-[#ef4444]">{planError}</p> : null}
         </div>
       </section>
     </main>

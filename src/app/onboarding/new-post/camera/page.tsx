@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 const flashOffIconAsset =
@@ -12,27 +13,6 @@ const switchCameraIconAsset =
   "https://www.figma.com/api/mcp/asset/bbe764fc-d67b-40a2-9660-9e370d1c265f";
 const galleryIconAsset =
   "https://www.figma.com/api/mcp/asset/f8a4bc60-fa63-4232-a466-301b67eb8ce3";
-
-function CloseIcon() {
-  return (
-    <svg aria-hidden="true" className="h-6 w-6" fill="none" viewBox="0 0 24 24">
-      <path
-        d="M7 7L17 17"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="1.8"
-      />
-      <path
-        d="M17 7L7 17"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="1.8"
-      />
-    </svg>
-  );
-}
 
 function FlashIcon({ on }: { on: boolean }) {
   return (
@@ -77,16 +57,41 @@ function GalleryIcon() {
 }
 
 export default function CameraOnboardingPage() {
+  const router = useRouter();
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const trackRef = useRef<MediaStreamTrack | null>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
-  const uploadedPhotoUrlRef = useRef<string | null>(null);
   const [cameraReady, setCameraReady] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [flashOn, setFlashOn] = useState(false);
   const [torchSupported, setTorchSupported] = useState(false);
-  const [uploadedPhotoUrl, setUploadedPhotoUrl] = useState<string | null>(null);
+  const [isLandscape, setIsLandscape] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function checkOnboardingStatus() {
+      const response = await fetch("/api/profile/onboarding-status");
+      if (!response.ok) {
+        return;
+      }
+
+      const status = (await response.json()) as { nextStep?: string };
+      if (!isMounted || !status.nextStep) {
+        return;
+      }
+
+      if (status.nextStep !== "/onboarding") {
+        router.replace(status.nextStep);
+      }
+    }
+
+    void checkOnboardingStatus();
+    return () => {
+      isMounted = false;
+    };
+  }, [router]);
 
   useEffect(() => {
     let cancelled = false;
@@ -143,12 +148,20 @@ export default function CameraOnboardingPage() {
       }
       trackRef.current = null;
 
-      if (uploadedPhotoUrlRef.current) {
-        URL.revokeObjectURL(uploadedPhotoUrlRef.current);
-        uploadedPhotoUrlRef.current = null;
-      }
     };
   }, []);
+
+  useEffect(() => {
+    if (typeof screen === "undefined" || !screen.orientation?.lock) {
+      return;
+    }
+
+    void screen.orientation
+      .lock(isLandscape ? "landscape" : "portrait")
+      .catch(() => {
+        // Orientation lock is not available on all devices/browser contexts.
+      });
+  }, [isLandscape]);
 
   useEffect(() => {
     const applyTorch = async () => {
@@ -176,19 +189,71 @@ export default function CameraOnboardingPage() {
     setFlashOn((current) => !current);
   };
 
-  const handleGallerySelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  const fileToDataUrl = (file: File) =>
+    new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result === "string") {
+          resolve(reader.result);
+          return;
+        }
+        reject(new Error("Unable to read file."));
+      };
+      reader.onerror = () => reject(new Error("Unable to read file."));
+      reader.readAsDataURL(file);
+    });
 
-    if (uploadedPhotoUrlRef.current) {
-      URL.revokeObjectURL(uploadedPhotoUrlRef.current);
+  const handleGallerySelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files ? Array.from(event.target.files) : [];
+    if (!files.length) return;
+
+    try {
+      const dataUrls = await Promise.all(files.map((file) => fileToDataUrl(file)));
+      const rawDraftPhotos = sessionStorage.getItem("ggDraftPostPhotos");
+      const draftPhotos = rawDraftPhotos ? (JSON.parse(rawDraftPhotos) as unknown) : [];
+      const existing = Array.isArray(draftPhotos)
+        ? draftPhotos.filter((value): value is string => typeof value === "string")
+        : [];
+      const merged = [...existing, ...dataUrls].slice(0, 5);
+      sessionStorage.setItem("ggDraftPostPhotos", JSON.stringify(merged));
+      router.push("/onboarding/new-post");
+    } catch {
+      setErrorMessage("Unable to load selected photos.");
+    }
+  };
+
+  const handleCapture = () => {
+    const video = videoRef.current;
+    if (!video || !cameraReady) {
+      setErrorMessage("Camera is not ready yet.");
+      return;
     }
 
-    const objectUrl = URL.createObjectURL(file);
-    uploadedPhotoUrlRef.current = objectUrl;
-    setUploadedPhotoUrl(objectUrl);
-    setErrorMessage("");
+    const width = video.videoWidth;
+    const height = video.videoHeight;
+    if (!width || !height) {
+      setErrorMessage("Unable to capture photo.");
+      return;
+    }
+
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext("2d");
+    if (!context) {
+      setErrorMessage("Unable to capture photo.");
+      return;
+    }
+
+    context.drawImage(video, 0, 0, width, height);
+    const capturedDataUrl = canvas.toDataURL("image/jpeg", 0.92);
+    sessionStorage.setItem("ggCapturedPhoto", capturedDataUrl);
+    router.push("/onboarding/new-post/confirm");
   };
+
+  const previewOrientationClass = isLandscape
+    ? "rotate-90 scale-[1.35]"
+    : "rotate-0 scale-100";
 
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,_#fffdf7_0%,_#f8f6f1_50%,_#efe9dc_100%)] px-0 sm:grid sm:place-items-center sm:px-8">
@@ -197,9 +262,9 @@ export default function CameraOnboardingPage() {
           <Link
             href="/onboarding/new-post"
             aria-label="Close camera"
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#f5f5f5] text-[#333333] transition hover:bg-[#ebebeb]"
+            className="inline-flex h-10 w-10 items-center justify-center transition"
           >
-            <CloseIcon />
+            <Image src="/icons/back-button.svg" alt="" aria-hidden="true" width={40} height={40} className="h-10 w-10" />
           </Link>
           <div className="flex items-center gap-4">
             <button
@@ -213,7 +278,12 @@ export default function CameraOnboardingPage() {
             </button>
             <button
               type="button"
-              aria-label="Switch camera"
+              onClick={() => setIsLandscape((current) => !current)}
+              aria-label={
+                isLandscape
+                  ? "Switch preview to portrait"
+                  : "Switch preview to landscape"
+              }
               className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#f5f5f5] text-[#333333]"
             >
               <SwitchCameraIcon />
@@ -222,22 +292,15 @@ export default function CameraOnboardingPage() {
         </header>
 
         <div className="relative flex-1 bg-black">
-          {uploadedPhotoUrl ? (
-            <div
-              className="absolute inset-0 bg-center bg-cover"
-              style={{ backgroundImage: `url("${uploadedPhotoUrl}")` }}
-            />
-          ) : (
-            <video
-              ref={videoRef}
-              autoPlay
-              muted
-              playsInline
-              className={`absolute inset-0 block h-full w-full min-h-full min-w-full ${cameraReady ? "opacity-100" : "opacity-0"}`}
-              style={{ objectFit: "cover" }}
-            />
-          )}
-          {!cameraReady && !uploadedPhotoUrl ? (
+          <video
+            ref={videoRef}
+            autoPlay
+            muted
+            playsInline
+            className={`absolute inset-0 block h-full w-full min-h-full min-w-full transition-transform duration-300 ${previewOrientationClass} ${cameraReady ? "opacity-100" : "opacity-0"}`}
+            style={{ objectFit: "cover" }}
+          />
+          {!cameraReady ? (
             <div className="absolute inset-0 flex items-center justify-center px-6 text-center text-[14px] font-medium text-white/90">
               {errorMessage || "Starting camera..."}
             </div>
@@ -265,6 +328,7 @@ export default function CameraOnboardingPage() {
               ref={galleryInputRef}
               type="file"
               accept="image/*"
+              multiple
               onChange={handleGallerySelect}
               className="hidden"
             />
@@ -273,6 +337,7 @@ export default function CameraOnboardingPage() {
               type="button"
               aria-label="Capture photo"
               className="justify-self-center"
+              onClick={handleCapture}
             >
               <span className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-[#3f7a49] ring-4 ring-[#f2f2f2]">
                 <span className="h-[54px] w-[54px] rounded-full border-[3px] border-[#d7ead9]" />
@@ -286,3 +351,4 @@ export default function CameraOnboardingPage() {
     </main>
   );
 }
+

@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 type SlideConfig = {
   eyebrow: string;
@@ -119,8 +120,40 @@ function ChevronRightIcon() {
 }
 
 export default function Home() {
+  const router = useRouter();
   const [currentSlide, setCurrentSlide] = useState(0);
   const slideData = slides[currentSlide];
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function redirectIfAuthenticated() {
+      const meResponse = await fetch("/api/auth/me");
+      if (!meResponse.ok) {
+        return;
+      }
+
+      const me = (await meResponse.json()) as { loggedIn?: boolean };
+      if (!isMounted || !me.loggedIn) {
+        return;
+      }
+
+      const statusResponse = await fetch("/api/profile/onboarding-status");
+      if (!statusResponse.ok) {
+        router.replace("/pricing");
+        return;
+      }
+
+      const status = (await statusResponse.json()) as { nextStep?: string };
+      router.replace(status.nextStep ?? "/pricing");
+    }
+
+    void redirectIfAuthenticated();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [router]);
 
   const handleNext = () => {
     setCurrentSlide((index) => Math.min(index + 1, slides.length - 1));

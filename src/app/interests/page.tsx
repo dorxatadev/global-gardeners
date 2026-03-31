@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { useMemo, useState } from "react";
 
 const INTERESTS = [
@@ -49,9 +51,13 @@ function ChevronRightIcon() {
 }
 
 export default function InterestsPage() {
+  const router = useRouter();
   const [selectedInterests, setSelectedInterests] = useState<Set<string>>(
     () => new Set(),
   );
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
 
   const selectedCount = selectedInterests.size;
   const remainingToSelect = Math.max(MIN_REQUIRED_TOPICS - selectedCount, 0);
@@ -79,6 +85,81 @@ export default function InterestsPage() {
     });
   };
 
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadInterests() {
+      const statusResponse = await fetch("/api/profile/onboarding-status");
+      if (statusResponse.ok) {
+        const status = (await statusResponse.json()) as { nextStep?: string };
+        if (isMounted && status.nextStep && status.nextStep !== "/interests") {
+          router.replace(status.nextStep);
+          return;
+        }
+      }
+
+      try {
+        const response = await fetch("/api/profile/interests", {
+          method: "GET",
+        });
+
+        if (!response.ok) {
+          return;
+        }
+
+        const result = (await response.json()) as { interests?: string[] };
+        if (!isMounted || !result.interests) {
+          return;
+        }
+
+        setSelectedInterests(new Set(result.interests));
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    void loadInterests();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [router]);
+
+  const handleContinue = async () => {
+    if (!canContinue || isSaving) {
+      return;
+    }
+
+    setSaveError("");
+    setIsSaving(true);
+
+    try {
+      const response = await fetch("/api/profile/interests", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          interests: [...selectedInterests],
+        }),
+      });
+
+      const result = (await response.json()) as { error?: string };
+      if (!response.ok) {
+        setSaveError(result.error ?? "Unable to save interests.");
+        return;
+      }
+
+      router.push("/onboarding");
+    } catch {
+      setSaveError("Unable to save interests.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,_#fffdf7_0%,_#f8f6f1_50%,_#efe9dc_100%)] px-4 py-0 text-[#182a17] sm:grid sm:place-items-center sm:px-8">
       <section className="mx-auto flex min-h-screen w-full max-w-[390px] flex-col overflow-hidden border border-[#e7e0d2] bg-[#f8f6f1] shadow-[0_24px_80px_rgba(56,71,45,0.12)]">
@@ -100,7 +181,7 @@ export default function InterestsPage() {
             <h1 className="max-w-[315px] text-[30px] font-semibold leading-[30px] tracking-[-0.033em] text-[#182a17]">
               What are you interested in growing?
             </h1>
-            <p className="max-w-[358px] text-[16px] font-medium leading-6 text-[#333333cc]">
+                    <p className="w-full text-[16px] font-medium leading-6 text-[#333333cc]">
               Choose topics you&apos;re interested in so we can personalize your
               experience.
             </p>
@@ -133,28 +214,27 @@ export default function InterestsPage() {
 
           <div className="mt-auto border-t border-[#e5e5e5] px-0 pb-4 pt-5">
             <p className="text-[14px] font-medium leading-6 text-[#333333cc]">{selectedCountMessage}</p>
-            <Link
-              href="/onboarding"
-              aria-disabled={!canContinue}
-              onClick={(event) => {
-                if (!canContinue) {
-                  event.preventDefault();
-                }
+            <button
+              type="button"
+              disabled={!canContinue || isSaving || isLoading}
+              onClick={() => {
+                void handleContinue();
               }}
               className={`mt-4 flex h-[52px] w-full items-center justify-center rounded-full text-[14px] font-medium leading-5 text-[#f4f1e8] transition focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-                canContinue
+                canContinue && !isLoading
                   ? "bg-[#457941] hover:bg-[#3b6838] focus:ring-[#457941] focus:ring-offset-[#f8f6f1]"
                   : "cursor-not-allowed bg-[#99b297] text-[#edf2ec]"
               }`}
             >
-              Continue
-            </Link>
+              {isSaving ? "Saving..." : "Continue"}
+            </button>
             {!canContinue ? (
               <p className="mt-2 text-[12px] leading-4 text-[#666666]">
                 Select {remainingToSelect} more topic
                 {remainingToSelect === 1 ? "" : "s"} to continue.
               </p>
             ) : null}
+            {saveError ? <p className="mt-2 text-[12px] leading-4 text-[#ef4444]">{saveError}</p> : null}
           </div>
         </div>
       </section>

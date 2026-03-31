@@ -176,6 +176,10 @@ function EmailForm() {
   }>({});
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [submitMessage, setSubmitMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const validateField = (
     name: "firstName" | "email" | "password" | "confirmPassword",
@@ -207,8 +211,10 @@ function EmailForm() {
     return "";
   };
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setSubmitError("");
+    setSubmitMessage("");
 
     const firstNameError = validateField("firstName", formValues.firstName, formValues);
     const emailError = validateField("email", formValues.email, formValues);
@@ -226,8 +232,42 @@ function EmailForm() {
       return;
     }
 
-    document.cookie = "gg_session=1; path=/; max-age=2592000; samesite=lax";
-    router.push("/pricing");
+    if (!acceptedTerms) {
+      setSubmitError("Please accept the Terms & Privacy Policy to continue.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const response = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          firstName: formValues.firstName,
+          email: formValues.email,
+          password: formValues.password,
+        }),
+      });
+
+      const result = (await response.json()) as { error?: string; requiresEmailConfirmation?: boolean };
+      if (!response.ok) {
+        setSubmitError(result.error ?? "Unable to create account.");
+        return;
+      }
+
+      if (result.requiresEmailConfirmation) {
+        setSubmitMessage("Account created. Please verify your email before logging in.");
+        return;
+      }
+
+      router.push("/pricing");
+    } catch {
+      setSubmitError("Unexpected error while creating account.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const inputBaseClass =
@@ -326,16 +366,24 @@ function EmailForm() {
       </div>
 
       <label className="inline-flex items-center gap-2 pt-1 text-[14px] font-medium text-[#333333]">
-        <input type="checkbox" className="h-4 w-4 rounded-[4px] border border-black/10 bg-white accent-[#457941]" />
+        <input
+          type="checkbox"
+          checked={acceptedTerms}
+          onChange={(event) => setAcceptedTerms(event.target.checked)}
+          className="h-4 w-4 rounded-[4px] border border-black/10 bg-white accent-[#457941]"
+        />
         I agree to the Terms & Privacy Policy
       </label>
 
       <button
         type="submit"
-        className="mt-2 h-[52px] w-full rounded-full bg-[#457941] text-[14px] font-medium text-[#f4f1e8] transition hover:bg-[#3b6838] focus:outline-none focus:ring-2 focus:ring-[#457941] focus:ring-offset-2 focus:ring-offset-[#f8f6f1]"
+        disabled={isSubmitting || !acceptedTerms}
+        className="mt-2 h-[52px] w-full rounded-full bg-[#457941] text-[14px] font-medium text-[#f4f1e8] transition hover:bg-[#3b6838] focus:outline-none focus:ring-2 focus:ring-[#457941] focus:ring-offset-2 focus:ring-offset-[#f8f6f1] disabled:cursor-not-allowed disabled:opacity-60"
       >
-        Create account
+        {isSubmitting ? "Creating account..." : "Create account"}
       </button>
+      {submitError ? <p className="text-[12px] leading-4 text-[#ef4444]">{submitError}</p> : null}
+      {submitMessage ? <p className="text-[12px] leading-4 text-[#457941]">{submitMessage}</p> : null}
     </form>
   );
 }
@@ -366,7 +414,7 @@ export default function SignupPage() {
           <p className="text-[24px] font-semibold tracking-[-0.06em] text-[#31674c]">Global Gardeners</p>
         </header>
 
-        <div className="mx-auto flex w-full max-w-[358px] flex-1 flex-col items-center gap-10">
+        <div className="mx-auto flex w-full flex-1 flex-col items-center gap-10">
           <h1 className="text-center text-[30px] font-semibold leading-[30px] tracking-[-0.033em] text-[#182a17]">
             Create an account
           </h1>

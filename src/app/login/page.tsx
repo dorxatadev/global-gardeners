@@ -121,6 +121,9 @@ export default function LoginPage() {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const [submitError, setSubmitError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [keepSignedIn, setKeepSignedIn] = useState(false);
 
   const validateField = (name: "email" | "password", value: string) => {
     if (!value.trim()) {
@@ -137,8 +140,9 @@ export default function LoginPage() {
     return "";
   };
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setSubmitError("");
 
     const emailError = validateField("email", formValues.email);
     const passwordError = validateField("password", formValues.password);
@@ -152,8 +156,32 @@ export default function LoginPage() {
       return;
     }
 
-    document.cookie = "gg_session=1; path=/; max-age=2592000; samesite=lax";
-    router.push("/pricing");
+    setIsSubmitting(true);
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: formValues.email,
+          password: formValues.password,
+          keepSignedIn,
+        }),
+      });
+
+      const result = (await response.json()) as { error?: string; nextStep?: string };
+      if (!response.ok) {
+        setSubmitError(result.error ?? "Unable to log in.");
+        return;
+      }
+
+      router.push(result.nextStep ?? "/");
+    } catch {
+      setSubmitError("Unexpected error while logging in.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -163,7 +191,7 @@ export default function LoginPage() {
           <p className="text-[24px] font-semibold tracking-[-0.06em] text-[#31674c]">Global Gardeners</p>
         </header>
 
-        <div className="mx-auto flex w-full max-w-[358px] flex-1 flex-col items-center gap-10">
+        <div className="mx-auto flex w-full flex-1 flex-col items-center gap-10">
           <h1 className="text-center text-[30px] font-semibold leading-[30px] tracking-[-0.033em] text-[#182a17]">
             Welcome back!
           </h1>
@@ -215,6 +243,8 @@ export default function LoginPage() {
               <label className="inline-flex items-center gap-2 font-medium">
                 <input
                   type="checkbox"
+                  checked={keepSignedIn}
+                  onChange={(event) => setKeepSignedIn(event.target.checked)}
                   className="h-4 w-4 rounded-[4px] border border-black/10 bg-white accent-[#457941]"
                 />
                 Keep me signed in
@@ -226,10 +256,12 @@ export default function LoginPage() {
 
             <button
               type="submit"
+              disabled={isSubmitting}
               className="h-[52px] w-full rounded-full bg-[#457941] text-[14px] font-medium leading-5 text-[#f4f1e8] transition hover:bg-[#3b6838] focus:outline-none focus:ring-2 focus:ring-[#457941] focus:ring-offset-2 focus:ring-offset-[#f8f6f1]"
             >
-              Log In
+              {isSubmitting ? "Logging in..." : "Log In"}
             </button>
+            {submitError ? <p className="text-[12px] leading-4 text-[#ef4444]">{submitError}</p> : null}
           </form>
 
           <div className="flex w-full items-center gap-4 text-[14px] text-[#333333cc]">
