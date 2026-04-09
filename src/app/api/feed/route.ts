@@ -8,6 +8,7 @@ type PostRow = {
   content: string | null;
   note: string | null;
   heart_count: number | null;
+  comment_count: number | null;
   created_at: string;
 };
 
@@ -17,11 +18,13 @@ type PostPhotoRow = {
   sort_order: number;
 };
 
-type CommentRow = {
+type PostHeartRow = {
   post_id: number;
+  user_id: string;
 };
 
 type OwnProfileRow = {
+  user_id?: string;
   full_name: string | null;
   nickname: string | null;
   profile_photo_url: string | null;
@@ -61,20 +64,36 @@ export async function GET(request: Request) {
 
   const supabase = createAuthedSupabaseClient(auth.accessToken);
 
-  const { data: posts, error: postsError } = await supabase
+  const postsQuery = await supabase
     .from("posts")
-    .select("id, user_id, content, note, heart_count, created_at")
+    .select("id, user_id, content, note, heart_count, comment_count, created_at")
     .order("created_at", { ascending: false })
-    .limit(50);
+    .limit(20);
 
-  if (postsError) {
-    return NextResponse.json({ error: postsError.message }, { status: 400 });
+  let postRows: PostRow[] = [];
+  if (!postsQuery.error) {
+    postRows = (postsQuery.data ?? []) as PostRow[];
+  } else {
+    const fallbackQuery = await supabase
+      .from("posts")
+      .select("id, user_id, content, note, heart_count, created_at")
+      .order("created_at", { ascending: false })
+      .limit(20);
+
+    if (fallbackQuery.error) {
+      return NextResponse.json({ error: fallbackQuery.error.message }, { status: 400 });
+    }
+
+    postRows = ((fallbackQuery.data ?? []) as Omit<PostRow, "comment_count">[]).map((post) => ({
+      ...post,
+      comment_count: null,
+    }));
   }
-
-  const postRows = (posts ?? []) as PostRow[];
   const postIds = postRows.map((post) => post.id);
 
-  const [{ data: photos }, { data: comments }, { data: ownProfile }, { data: authData }] = await Promise.all([
+  const postUserIds = [...new Set(postRows.map((post) => post.user_id))];
+
+  const [{ data: photos }, { data: authorProfiles }, commentsFallbackResult, postHeartsResult, { data: authUserData }] = await Promise.all([
     postIds.length
       ? supabase
           .from("post_photos")
@@ -82,14 +101,18 @@ export async function GET(request: Request) {
           .in("post_id", postIds)
           .order("sort_order", { ascending: true })
       : Promise.resolve({ data: [] as PostPhotoRow[] }),
-    postIds.length
+    postUserIds.length
+      ? supabase
+          .from("profiles")
+          .select("user_id, full_name, nickname, profile_photo_url")
+          .in("user_id", postUserIds)
+      : Promise.resolve({ data: [] as OwnProfileRow[] }),
+    postIds.length && postRows.some((post) => post.comment_count == null)
       ? supabase.from("post_comments").select("post_id").in("post_id", postIds)
-      : Promise.resolve({ data: [] as CommentRow[] }),
-    supabase
-      .from("profiles")
-      .select("full_name, nickname, profile_photo_url")
-      .eq("user_id", auth.userId)
-      .maybeSingle(),
+      : Promise.resolve({ data: [] as { post_id: number }[] }),
+    postIds.length
+      ? supabase.from("post_hearts").select("post_id, user_id").in("post_id", postIds)
+      : Promise.resolve({ data: [] as PostHeartRow[] }),
     supabase.auth.getUser(),
   ]);
 
@@ -99,40 +122,68 @@ export async function GET(request: Request) {
     list.push(photo);
     photosByPostId.set(photo.post_id, list);
   }
-
   const commentsCountByPostId = new Map<number, number>();
-  for (const comment of (comments ?? []) as CommentRow[]) {
+  for (const comment of (commentsFallbackResult.data ?? []) as { post_id: number }[]) {
     commentsCountByPostId.set(comment.post_id, (commentsCountByPostId.get(comment.post_id) ?? 0) + 1);
   }
+  const heartsCountByPostId = new Map<number, number>();
+  const likedPostIdsByMe = new Set<number>();
+  for (const heart of (postHeartsResult.data ?? []) as PostHeartRow[]) {
+    heartsCountByPostId.set(heart.post_id, (heartsCountByPostId.get(heart.post_id) ?? 0) + 1);
+    if (heart.user_id === auth.userId) {
+      likedPostIdsByMe.add(heart.post_id);
+    }
+  }
 
-  const ownProfileRow = ownProfile as OwnProfileRow | null;
+  const profilesByUserId = new Map<string, OwnProfileRow>();
+  for (const profile of (authorProfiles ?? []) as OwnProfileRow[]) {
+    if (typeof profile.user_id === "string") {
+      profilesByUserId.set(profile.user_id, profile);
+    }
+  }
+
+  const ownProfileRow = profilesByUserId.get(auth.userId) ?? null;
   const metadataName =
-    typeof authData?.user?.user_metadata?.full_name === "string" ? authData.user.user_metadata.full_name.trim() : "";
-  const emailName = authData?.user?.email?.split("@")[0]?.trim() ?? "";
-  const fallbackFullName = metadataName || emailName || "Global Gardener";
-
-  const ownName = ownProfileRow?.full_name?.trim() || fallbackFullName;
-  const ownNickname = ownProfileRow?.nickname?.trim() || toNickname(ownName);
-  const ownProfilePhotoUrl = ownProfileRow?.profile_photo_url?.trim() || null;
+    typeof authUserData?.user?.user_metadata?.full_name === "string"
+      ? authUserData.user.user_metadata.full_name.trim()
+      : "";
+  const emailName = authUserData?.user?.email?.split("@")[0]?.trim() ?? "";
+  const ownFallbackName = metadataName || emailName || "Global Gardener";
+  const ownFallbackNickname = ownFallbackName ? toNickname(ownFallbackName) : "";
+  const ownName = ownProfileRow?.full_name?.trim() || ownFallbackName;
+  const ownNickname = ownProfileRow?.nickname?.trim() || ownFallbackNickname;
+  const ownAvatarUrl = ownProfileRow?.profile_photo_url?.trim() || null;
+  const fallbackFullName = "Global Gardener";
 
   const feed = postRows.map((post, index) => {
     const postPhotos = photosByPostId.get(post.id) ?? [];
     const firstPhoto = postPhotos[0];
     const caption = post.note?.trim() || post.content?.trim() || "Shared a new update.";
     const isOwnPost = post.user_id === auth.userId;
+    const authorProfile = profilesByUserId.get(post.user_id);
+    const authorName = isOwnPost
+      ? ownName
+      : authorProfile?.full_name?.trim() || fallbackFullName;
+    const authorNickname = isOwnPost
+      ? ownNickname || toNickname(authorName)
+      : authorProfile?.nickname?.trim() || toNickname(authorName);
+    const authorProfilePhotoUrl = isOwnPost
+      ? ownAvatarUrl
+      : authorProfile?.profile_photo_url?.trim() || null;
 
     return {
       id: `post-${post.id}`,
       source: isOwnPost ? "you" : index % 2 === 0 ? "following" : "interest",
-      authorName: isOwnPost ? ownName : "Global Gardener",
-      username: isOwnPost ? ownNickname.replace(/^@/, "") : usernameFromUserId(post.user_id),
-      avatarUrl: isOwnPost ? ownProfilePhotoUrl : null,
+      authorName: authorName,
+      username: authorNickname ? authorNickname.replace(/^@/, "") : usernameFromUserId(post.user_id),
+      avatarUrl: authorProfilePhotoUrl,
       speciesName: undefined,
       mediaUrl: firstPhoto?.photo_url,
       mediaUrls: postPhotos.map((photo) => photo.photo_url),
       caption,
-      hearts: Math.max(0, post.heart_count ?? 0),
-      comments: commentsCountByPostId.get(post.id) ?? 0,
+      hearts: Math.max(0, heartsCountByPostId.get(post.id) ?? post.heart_count ?? 0),
+      likedByMe: likedPostIdsByMe.has(post.id),
+      comments: Math.max(0, post.comment_count ?? commentsCountByPostId.get(post.id) ?? 0),
       publishedAgo: toTimeAgo(post.created_at),
     };
   });

@@ -115,10 +115,12 @@ export default function NewPostOnboardingPage() {
     });
   };
 
+  const hasPhotos = photoUrls.length > 0;
+
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,_#fffdf7_0%,_#f8f6f1_50%,_#efe9dc_100%)] px-0 text-[#182a17] sm:grid sm:place-items-center sm:px-8">
-      <section className="mx-auto flex min-h-screen w-full max-w-[390px] flex-col overflow-hidden border border-[#e7e0d2] bg-[#f8f6f1] shadow-[0_24px_80px_rgba(56,71,45,0.12)]">
-        <header className="flex items-center border-b border-black/10 bg-white p-4">
+    <main className="client-main min-h-screen bg-[radial-gradient(circle_at_top,_#fffdf7_0%,_#f8f6f1_50%,_#efe9dc_100%)] px-0 text-[#182a17] sm:grid sm:place-items-center sm:px-8">
+      <section className="client-shell mx-auto flex min-h-screen w-full max-w-[390px] flex-col overflow-hidden border border-[#e7e0d2] bg-[#f8f6f1] shadow-[0_24px_80px_rgba(56,71,45,0.12)]">
+        <header className="client-header flex items-center border-b border-black/10 bg-white p-4">
           <Link
             href="/onboarding"
             aria-label="Back"
@@ -137,13 +139,13 @@ export default function NewPostOnboardingPage() {
               <p className="text-[14px] font-semibold leading-5 text-[#333333]">Add a photo</p>
               <div
                 className="grid gap-4"
-                style={{ gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}
+                style={{ gridTemplateColumns: hasPhotos ? "repeat(2, minmax(0, 1fr))" : "repeat(1, minmax(0, 1fr))" }}
               >
                 {photoUrls.length < MAX_PHOTOS ? (
                   <Link
                     href="/onboarding/new-post/camera"
                     className="flex w-full flex-col items-center justify-center gap-4 rounded-lg border border-dashed border-[#d4d4d4] bg-white/10 px-6 text-center shadow-[0_1px_2px_rgba(0,0,0,0.05)]"
-                    style={{ aspectRatio: "1 / 1" }}
+                    style={hasPhotos ? { aspectRatio: "1 / 1" } : { minHeight: 144 }}
                   >
                     <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#31674c] text-white">
                       <PlusIcon />

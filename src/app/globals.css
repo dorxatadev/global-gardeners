@@ -18,3 +18,15 @@ body {
   color: var(--foreground);
   font-family: var(--font-geist-sans), sans-serif;
 }
+
+/* Client-first semantic class namespace */
+.client-main {}
+
+.client-shell {}
+
+.client-header {
+  width: 100%;
+  max-width: none;
+}
+
+.client-form {}

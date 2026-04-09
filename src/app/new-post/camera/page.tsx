@@ -5,15 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
-const flashOffIconAsset =
-  "https://www.figma.com/api/mcp/asset/217d1065-0326-4286-91ea-b444f57c2b59";
-const flashOnIconAsset =
-  "https://www.figma.com/api/mcp/asset/b2e10230-cfe2-4966-91f8-6260d40b30d2";
-const switchCameraIconAsset =
-  "https://www.figma.com/api/mcp/asset/bbe764fc-d67b-40a2-9660-9e370d1c265f";
-const galleryIconAsset =
-  "https://www.figma.com/api/mcp/asset/f8a4bc60-fa63-4232-a466-301b67eb8ce3";
-
 function FlashIcon({ on }: { on: boolean }) {
   return (
     <Image
@@ -21,8 +12,7 @@ function FlashIcon({ on }: { on: boolean }) {
       aria-hidden="true"
       className="h-6 w-6"
       height={24}
-      src={on ? flashOnIconAsset : flashOffIconAsset}
-      unoptimized
+      src={on ? "/icons/flash-on.svg" : "/icons/flash-off.svg"}
       width={24}
     />
   );
@@ -30,29 +20,13 @@ function FlashIcon({ on }: { on: boolean }) {
 
 function SwitchCameraIcon() {
   return (
-    <Image
-      alt=""
-      aria-hidden="true"
-      className="h-6 w-6"
-      height={24}
-      src={switchCameraIconAsset}
-      unoptimized
-      width={24}
-    />
+    <Image alt="" aria-hidden="true" className="h-6 w-6" height={24} src="/icons/toggle-camera.svg" width={24} />
   );
 }
 
 function GalleryIcon() {
   return (
-    <Image
-      alt=""
-      aria-hidden="true"
-      className="h-6 w-6"
-      height={24}
-      src={galleryIconAsset}
-      unoptimized
-      width={24}
-    />
+    <Image alt="" aria-hidden="true" className="h-6 w-6" height={24} src="/icons/gallery.svg" width={24} />
   );
 }
 
@@ -279,9 +253,9 @@ export default function CameraPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,_#fffdf7_0%,_#f8f6f1_50%,_#efe9dc_100%)] px-0 sm:grid sm:place-items-center sm:px-8">
-      <section className="relative mx-auto flex min-h-screen w-full max-w-[390px] flex-col overflow-hidden border border-[#e7e0d2] bg-white shadow-[0_24px_80px_rgba(56,71,45,0.12)]">
-        <header className="fixed left-0 right-0 top-0 z-30 mx-auto flex w-full max-w-[390px] items-center justify-between border-b border-black/10 bg-white p-4">
+    <main className="client-main min-h-screen bg-[radial-gradient(circle_at_top,_#fffdf7_0%,_#f8f6f1_50%,_#efe9dc_100%)] px-0 sm:grid sm:place-items-center sm:px-8">
+      <section className="client-shell relative mx-auto flex min-h-screen w-full max-w-[390px] flex-col overflow-hidden border border-[#e7e0d2] bg-white shadow-[0_24px_80px_rgba(56,71,45,0.12)]">
+        <header className="client-header fixed left-0 right-0 top-0 z-30 flex w-full items-center justify-between border-b border-black/10 bg-white p-4">
           <Link
             href="/new-post"
             aria-label="Close camera"

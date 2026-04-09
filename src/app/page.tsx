@@ -164,9 +164,9 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,_#fffdf7_0%,_#f8f6f1_50%,_#efe9dc_100%)] px-4 py-0 text-[#182a17] sm:grid sm:place-items-center sm:px-8 sm:py-0">
-      <section className="mx-auto flex min-h-screen w-full max-w-[390px] flex-col overflow-hidden rounded-none border border-[#e7e0d2] bg-[#f8f6f1] shadow-[0_24px_80px_rgba(56,71,45,0.12)]">
-        <header className="flex items-center justify-between px-4 py-4">
+    <main className="client-main min-h-screen bg-[radial-gradient(circle_at_top,_#fffdf7_0%,_#f8f6f1_50%,_#efe9dc_100%)] px-4 py-0 text-[#182a17] sm:grid sm:place-items-center sm:px-8 sm:py-0">
+      <section className="client-shell mx-auto flex min-h-screen w-full max-w-[390px] flex-col overflow-hidden rounded-none border border-[#e7e0d2] bg-[#f8f6f1] shadow-[0_24px_80px_rgba(56,71,45,0.12)]">
+        <header className="client-header flex items-center justify-between px-4 py-4">
           <p className="text-[24px] font-semibold tracking-[-0.06em] text-[#31674c]">
             Global Gardeners
           </p>

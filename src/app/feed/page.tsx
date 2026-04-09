@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 
 type FeedSource = "you" | "following" | "interest";
 
@@ -17,6 +17,7 @@ type FeedPost = {
   mediaUrls?: string[];
   caption: string;
   hearts: number;
+  likedByMe: boolean;
   comments: number;
   publishedAgo: string;
 };
@@ -32,6 +33,34 @@ type DrawerProfile = {
   nickname: string;
   profilePhotoUrl: string | null;
 };
+
+type CommentAuthor = {
+  fullName: string;
+  nickname: string;
+  profilePhotoUrl: string | null;
+};
+
+type CommentReply = {
+  id: string;
+  text: string;
+  publishedAgo: string;
+  heartCount?: number;
+  likedByMe?: boolean;
+  author: CommentAuthor;
+};
+
+type CommentThread = {
+  id: string;
+  text: string;
+  publishedAgo: string;
+  heartCount?: number;
+  likedByMe?: boolean;
+  author: CommentAuthor;
+  replies: CommentReply[];
+};
+
+const RECENT_SEARCHES_KEY = "feedRecentSearches";
+const MAX_RECENT_SEARCHES = 6;
 
 const drawerItems: DrawerItem[] = [
   {
@@ -269,7 +298,18 @@ function LeafIcon() {
   );
 }
 
-function HeartIcon() {
+function HeartIcon({ filled }: { filled: boolean }) {
+  if (filled) {
+    return (
+      <svg aria-hidden="true" className="h-6 w-6 text-[#ef4444]" viewBox="0 0 24 24">
+        <path
+          d="M12.001 21.35c-.384 0-.768-.147-1.06-.439L4.35 14.32C2.754 12.724 1.75 10.51 1.75 8.125A5.87 5.87 0 0 1 7.625 2.25c1.574 0 3.088.63 4.176 1.739l.2.203.2-.203A5.838 5.838 0 0 1 16.375 2.25a5.87 5.87 0 0 1 5.875 5.875c0 2.385-1.004 4.599-2.6 6.194l-6.59 6.592a1.5 1.5 0 0 1-1.06.439Z"
+          fill="currentColor"
+        />
+      </svg>
+    );
+  }
+
   return (
     <svg aria-hidden="true" className="h-6 w-6" fill="none" viewBox="0 0 24 24">
       <path
@@ -291,6 +331,41 @@ function MessageCircleIcon() {
   );
 }
 
+function CommentHeartIcon({ filled }: { filled: boolean }) {
+  if (filled) {
+    return (
+      <svg aria-hidden="true" className="h-4 w-4 text-[#ef4444]" viewBox="0 0 24 24">
+        <path
+          d="M12.001 21.35c-.384 0-.768-.147-1.06-.439L4.35 14.32C2.754 12.724 1.75 10.51 1.75 8.125A5.87 5.87 0 0 1 7.625 2.25c1.574 0 3.088.63 4.176 1.739l.2.203.2-.203A5.838 5.838 0 0 1 16.375 2.25a5.87 5.87 0 0 1 5.875 5.875c0 2.385-1.004 4.599-2.6 6.194l-6.59 6.592a1.5 1.5 0 0 1-1.06.439Z"
+          fill="currentColor"
+        />
+      </svg>
+    );
+  }
+
+  return (
+    <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24">
+      <path
+        d="M21.25 8.5C21.25 7.24022 20.7492 6.0324 19.8584 5.1416C18.9676 4.2508 17.7598 3.75 16.5 3.75C15.6952 3.75 15.0525 3.86356 14.4521 4.125C13.8469 4.38861 13.2375 4.82302 12.5303 5.53027C12.2374 5.82317 11.7626 5.82317 11.4697 5.53027C10.7625 4.82302 10.1531 4.38861 9.54785 4.125C8.9475 3.86356 8.30478 3.75 7.5 3.75C6.24022 3.75 5.0324 4.2508 4.1416 5.1416C3.2508 6.0324 2.75 7.24022 2.75 8.5C2.75 10.2152 3.72645 11.6201 4.97266 12.9131L12 19.9395L18.4697 13.4697L18.4746 13.4639C19.9663 12.0023 21.25 10.4495 21.25 8.5ZM22.75 8.5C22.75 11.1305 21.0137 13.0778 19.5254 14.5361L19.5244 14.5352L12.5303 21.5303C12.2374 21.8232 11.7626 21.8232 11.4697 21.5303L4.47852 14.5391C2.97431 13.085 1.25 11.1397 1.25 8.5C1.25 6.8424 1.90895 5.25316 3.08105 4.08105C4.25316 2.90895 5.8424 2.25 7.5 2.25C8.45514 2.25 9.31287 2.3865 10.1475 2.75C10.7909 3.03031 11.3924 3.43407 12 3.9707C12.6076 3.43407 13.2091 3.03031 13.8525 2.75C14.6871 2.3865 15.5449 2.25 16.5 2.25C18.1576 2.25 19.7468 2.90895 20.9189 4.08105C22.091 5.25316 22.75 6.8424 22.75 8.5Z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+}
+
+function SendHorizontalIcon() {
+  return (
+    <Image
+      alt=""
+      aria-hidden="true"
+      className="h-5 w-5"
+      height={20}
+      src="/icons/comment-send.svg"
+      width={20}
+    />
+  );
+}
+
 function EllipsisVerticalIcon() {
   return (
     <svg aria-hidden="true" className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
@@ -309,7 +384,36 @@ function CloseIcon() {
   );
 }
 
-function FeedCard({ post }: { post: FeedPost }) {
+function SearchIcon() {
+  return (
+    <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 20 20">
+      <path
+        d="M8.75 2.91699C5.52834 2.91699 2.91667 5.52866 2.91667 8.75033C2.91667 11.972 5.52834 14.5837 8.75 14.5837C10.2394 14.5837 11.5985 14.0259 12.6293 13.1083L16.5939 17.0729C16.838 17.317 17.2337 17.317 17.4778 17.0729C17.722 16.8288 17.722 16.433 17.4778 16.1889L13.5132 12.2243C14.4308 11.1935 14.9887 9.83442 14.9887 8.34506C14.9887 5.1234 12.377 2.51172 9.15533 2.51172H8.75ZM4.16667 8.75033C4.16667 6.21899 6.21867 4.16699 8.75 4.16699C11.2813 4.16699 13.3333 6.21899 13.3333 8.75033C13.3333 11.2817 11.2813 13.3337 8.75 13.3337C6.21867 13.3337 4.16667 11.2817 4.16667 8.75033Z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+}
+
+function SmallXIcon() {
+  return (
+    <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 16 16">
+      <path d="M4 4L12 12M12 4L4 12" stroke="currentColor" strokeLinecap="round" strokeWidth="1.25" />
+    </svg>
+  );
+}
+
+function FeedCard({
+  post,
+  onOpenComments,
+  onToggleHeart,
+  isHeartPending,
+}: {
+  post: FeedPost;
+  onOpenComments: (post: FeedPost) => void;
+  onToggleHeart: (postId: string) => void;
+  isHeartPending: boolean;
+}) {
   const mediaScrollRef = useRef<HTMLDivElement | null>(null);
   const [activeMediaIndex, setActiveMediaIndex] = useState(0);
   const mediaUrls = post.mediaUrls?.length ? post.mediaUrls : post.mediaUrl ? [post.mediaUrl] : [];
@@ -401,11 +505,21 @@ function FeedCard({ post }: { post: FeedPost }) {
 
       <div className="mt-3 space-y-2">
         <div className="flex items-center gap-4">
-          <button type="button" className="inline-flex items-center gap-1 text-[#333333]">
-            <HeartIcon />
+          <button
+            type="button"
+            className={`inline-flex items-center gap-1 ${post.likedByMe ? "text-[#ef4444]" : "text-[#333333]"} disabled:opacity-60`}
+            onClick={() => onToggleHeart(post.id)}
+            disabled={isHeartPending}
+          >
+            <HeartIcon filled={post.likedByMe} />
             <span className="text-[14px] font-semibold leading-5">{post.hearts}</span>
           </button>
-          <button type="button" className="inline-flex items-center gap-1 text-[#333333]">
+          <button
+            type="button"
+            className="inline-flex items-center gap-1 text-[#333333]"
+            onClick={() => onOpenComments(post)}
+            aria-label={`Open comments for ${post.authorName}'s post`}
+          >
             <MessageCircleIcon />
             <span className="text-[14px] font-semibold leading-5">{post.comments}</span>
           </button>
@@ -437,21 +551,305 @@ function getInitials(fullName: string) {
   return `${parts[0][0] ?? ""}${parts[1][0] ?? ""}`.toUpperCase();
 }
 
+function parseNumericPostId(postId: string) {
+  const normalized = postId.replace(/^post-/, "");
+  const parsed = Number.parseInt(normalized, 10);
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    return null;
+  }
+  return parsed;
+}
+
+function ProfileAvatar({
+  fullName,
+  profilePhotoUrl,
+  size,
+}: {
+  fullName: string;
+  profilePhotoUrl: string | null;
+  size: number;
+}) {
+  if (profilePhotoUrl) {
+    return (
+      <Image
+        alt={fullName}
+        className="rounded-full object-cover"
+        height={size}
+        loader={({ src }) => src}
+        src={profilePhotoUrl}
+        unoptimized
+        width={size}
+      />
+    );
+  }
+
+  return (
+    <div
+      className="inline-flex items-center justify-center rounded-full bg-[#31674c] font-semibold text-[#fafafa]"
+      style={{ height: size, width: size, fontSize: size >= 40 ? 14 : 12 }}
+    >
+      {getInitials(fullName)}
+    </div>
+  );
+}
+
+function CommentsSheet({
+  isVisible,
+  post,
+  commentsLoading,
+  commentsError,
+  commentThreads,
+  expandedReplyThreadIds,
+  currentUser,
+  draftComment,
+  commentHeartPendingIds,
+  isSubmittingComment,
+  onClose,
+  onDraftCommentChange,
+  onSubmitComment,
+  onToggleReplies,
+  onReplyToComment,
+  onToggleCommentHeart,
+  replyingToLabel,
+  replyFocusNonce,
+}: {
+  isVisible: boolean;
+  post: FeedPost | null;
+  commentsLoading: boolean;
+  commentsError: string | null;
+  commentThreads: CommentThread[];
+  expandedReplyThreadIds: string[];
+  currentUser: DrawerProfile;
+  draftComment: string;
+  commentHeartPendingIds: string[];
+  isSubmittingComment: boolean;
+  onClose: () => void;
+  onDraftCommentChange: (value: string) => void;
+  onSubmitComment: (event: FormEvent<HTMLFormElement>) => void;
+  onToggleReplies: (threadId: string) => void;
+  onReplyToComment: (commentId: string, label: string) => void;
+  onToggleCommentHeart: (commentId: string) => void;
+  replyingToLabel: string | null;
+  replyFocusNonce: number;
+}) {
+  const hasComments = commentThreads.length > 0;
+  const defaultPlaceholder = post
+    ? post.source === "you"
+      ? "Comment on your own post..."
+      : `Comment on ${post.authorName}'s post...`
+    : "Add a comment...";
+  const inputPlaceholder = replyingToLabel ? `Reply to ${replyingToLabel}...` : defaultPlaceholder;
+  const commentInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (replyFocusNonce <= 0) {
+      return;
+    }
+
+    commentInputRef.current?.focus();
+    const valueLength = commentInputRef.current?.value.length ?? 0;
+    commentInputRef.current?.setSelectionRange(valueLength, valueLength);
+  }, [replyFocusNonce]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex h-screen w-full sm:mx-auto sm:max-w-[390px]" aria-hidden={!isVisible}>
+      <div className="relative h-screen w-full">
+        <button
+          type="button"
+          className={`absolute inset-0 bg-[#0a0d12] transition-opacity duration-300 ${isVisible ? "opacity-70" : "opacity-0"}`}
+          aria-label="Close comments"
+          onClick={onClose}
+        />
+
+        <section
+          role="dialog"
+          aria-modal="true"
+          aria-label="Comments"
+          className={`absolute bottom-0 left-0 right-0 flex h-[78vh] flex-col rounded-t-[20px] bg-white shadow-[0_-12px_30px_rgba(0,0,0,0.15)] transition-transform duration-300 ${
+            isVisible ? "translate-y-0" : "translate-y-full"
+          }`}
+        >
+          <div className="flex items-center justify-between border-b border-black/10 px-4 py-3">
+            <div className="w-6" />
+            <p className="text-[16px] font-semibold leading-6 text-[#171717]">Comments</p>
+            <button type="button" className="rounded-full p-1 text-[#525252]" aria-label="Close comments" onClick={onClose}>
+              <CloseIcon />
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto px-4 py-3">
+            {commentsLoading ? <p className="text-[14px] text-[#525252]">Loading comments...</p> : null}
+            {!commentsLoading && commentsError ? <p className="text-[14px] text-[#dc2626]">{commentsError}</p> : null}
+            {!commentsLoading && !commentsError && !hasComments ? (
+              <div className="pt-20 text-center">
+                <p className="text-[16px] font-semibold leading-6 text-[#171717]">No comments yet</p>
+                <p className="mt-1 text-[14px] leading-5 text-[#666666]">Be the first to comment on this post.</p>
+              </div>
+            ) : null}
+            {!commentsLoading && !commentsError && hasComments
+              ? commentThreads.map((thread) => {
+                  const isExpanded = expandedReplyThreadIds.includes(thread.id);
+                  const visibleReplies = isExpanded ? thread.replies : [];
+                  const hiddenReplyCount = Math.max(0, thread.replies.length - visibleReplies.length);
+
+                  return (
+                    <article key={thread.id} className="mb-4">
+                      <div className="flex gap-3">
+                        <ProfileAvatar fullName={thread.author.fullName} profilePhotoUrl={thread.author.profilePhotoUrl} size={40} />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-start gap-2">
+                            <p className="text-[14px] font-semibold leading-5 text-[#333333]">{thread.author.nickname || thread.author.fullName}</p>
+                            <p className="text-[14px] leading-5 text-[#333333cc]">{thread.publishedAgo}</p>
+                          </div>
+                          <p className="text-[14px] font-medium leading-5 text-[#333333cc]">{thread.text}</p>
+                          <div className="mt-1">
+                            <button
+                              type="button"
+                              className="text-[12px] font-semibold leading-4 text-[#333333]"
+                              onClick={() => onReplyToComment(thread.id, thread.author.fullName)}
+                            >
+                              Reply
+                            </button>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          className={`mt-0.5 flex min-w-[20px] flex-col items-center gap-1 ${
+                            thread.likedByMe ? "text-[#ef4444]" : "text-[#333333]"
+                          } disabled:opacity-60`}
+                          onClick={() => onToggleCommentHeart(thread.id)}
+                          disabled={commentHeartPendingIds.includes(thread.id)}
+                        >
+                          <CommentHeartIcon filled={Boolean(thread.likedByMe)} />
+                          <span className={`text-[12px] leading-4 ${thread.likedByMe ? "text-[#ef4444]" : "text-[#333333]"}`}>
+                            {thread.heartCount ?? 0}
+                          </span>
+                        </button>
+                      </div>
+
+                      {thread.replies.length > 0 ? (
+                        <div className="mt-1 pl-11">
+                          <button
+                            type="button"
+                            className="inline-flex items-center gap-1.5 text-[12px] font-medium leading-4 text-[#333333cc]"
+                            onClick={() => onToggleReplies(thread.id)}
+                          >
+                            <span className="h-px w-[26px] bg-[#33333333]" />
+                            <span>
+                              {isExpanded
+                                ? "Hide replies"
+                                : `View ${hiddenReplyCount} more ${hiddenReplyCount === 1 ? "reply" : "replies"}`}
+                            </span>
+                          </button>
+                        </div>
+                      ) : null}
+
+                      {visibleReplies.map((reply) => (
+                        <div key={reply.id} className="mt-2 flex gap-3 py-[6px] pl-11">
+                          <ProfileAvatar fullName={reply.author.fullName} profilePhotoUrl={reply.author.profilePhotoUrl} size={28} />
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-start gap-2">
+                              <p className="text-[14px] font-semibold leading-5 text-[#333333]">{reply.author.nickname || reply.author.fullName}</p>
+                              <p className="text-[14px] leading-5 text-[#333333cc]">{reply.publishedAgo}</p>
+                            </div>
+                            <p className="text-[14px] font-medium leading-5 text-[#333333cc]">{reply.text}</p>
+                            <button
+                              type="button"
+                              className="mt-1 text-[12px] font-semibold leading-4 text-[#333333]"
+                              onClick={() => onReplyToComment(thread.id, reply.author.fullName)}
+                            >
+                              Reply
+                            </button>
+                          </div>
+                          <button
+                            type="button"
+                            className={`mt-0.5 flex min-w-[20px] flex-col items-center gap-1 ${
+                              reply.likedByMe ? "text-[#ef4444]" : "text-[#333333]"
+                            } disabled:opacity-60`}
+                            onClick={() => onToggleCommentHeart(reply.id)}
+                            disabled={commentHeartPendingIds.includes(reply.id)}
+                          >
+                            <CommentHeartIcon filled={Boolean(reply.likedByMe)} />
+                            <span className={`text-[12px] leading-4 ${reply.likedByMe ? "text-[#ef4444]" : "text-[#333333]"}`}>
+                              {reply.heartCount ?? 0}
+                            </span>
+                          </button>
+                        </div>
+                      ))}
+                    </article>
+                  );
+                })
+              : null}
+          </div>
+
+          <div className="border-t border-black/10 px-4 py-3">
+            {replyingToLabel ? (
+              <p className="mb-2 text-[12px] leading-4 text-[#666666]">
+                Replying to <span className="font-medium text-[#333333]">{replyingToLabel}</span>
+              </p>
+            ) : null}
+            <form className="flex items-center gap-3" onSubmit={onSubmitComment}>
+              <ProfileAvatar fullName={currentUser.fullName} profilePhotoUrl={currentUser.profilePhotoUrl} size={44} />
+              <div className="flex h-11 flex-1 items-center rounded-full border border-[#e5e5e5] bg-white pl-4 pr-2 shadow-[0_20px_25px_0_rgba(0,0,0,0.1),0_8px_10px_0_rgba(0,0,0,0.1)]">
+                <input
+                  ref={commentInputRef}
+                  value={draftComment}
+                  onChange={(event) => onDraftCommentChange(event.target.value)}
+                  placeholder={inputPlaceholder}
+                  className="h-full flex-1 bg-transparent text-[14px] leading-5 text-[#171717] outline-none placeholder:text-[#33333380]"
+                  aria-label="Add a comment"
+                />
+                <button
+                  type="submit"
+                  disabled={isSubmittingComment || !draftComment.trim()}
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-full text-[#737373] disabled:cursor-not-allowed disabled:opacity-50"
+                  aria-label="Send comment"
+                >
+                  <SendHorizontalIcon />
+                </button>
+              </div>
+            </form>
+          </div>
+        </section>
+      </div>
+    </div>
+  );
+}
+
 export default function FeedPage() {
   const router = useRouter();
   const [isDrawerMounted, setIsDrawerMounted] = useState(false);
   const [isDrawerVisible, setIsDrawerVisible] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [feedPosts, setFeedPosts] = useState<FeedPost[]>([]);
+  const [postHeartPendingIds, setPostHeartPendingIds] = useState<string[]>([]);
   const [isFeedLoading, setIsFeedLoading] = useState(true);
+  const [isCommentsSheetMounted, setIsCommentsSheetMounted] = useState(false);
+  const [isCommentsSheetVisible, setIsCommentsSheetVisible] = useState(false);
+  const [activeCommentsPost, setActiveCommentsPost] = useState<FeedPost | null>(null);
+  const [commentsLoading, setCommentsLoading] = useState(false);
+  const [commentsError, setCommentsError] = useState<string | null>(null);
+  const [commentThreads, setCommentThreads] = useState<CommentThread[]>([]);
+  const [expandedReplyThreadIds, setExpandedReplyThreadIds] = useState<string[]>([]);
+  const [commentDraft, setCommentDraft] = useState("");
+  const [replyingToThreadId, setReplyingToThreadId] = useState<string | null>(null);
+  const [replyingToLabel, setReplyingToLabel] = useState<string | null>(null);
+  const [replyFocusNonce, setReplyFocusNonce] = useState(0);
+  const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+  const [commentHeartPendingIds, setCommentHeartPendingIds] = useState<string[]>([]);
+  const [searchValue, setSearchValue] = useState("");
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [drawerProfile, setDrawerProfile] = useState<DrawerProfile>({
     fullName: "Global Gardener",
     nickname: "@Global Gardener",
     profilePhotoUrl: null,
   });
   const drawerCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const commentsSheetCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const menuTriggerRef = useRef<HTMLButtonElement | null>(null);
   const drawerRef = useRef<HTMLElement | null>(null);
+  const searchContainerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -503,7 +901,7 @@ export default function FeedPage() {
         if (!isMounted) {
           return;
         }
-        setFeedPosts(result.posts ?? []);
+        setFeedPosts((result.posts ?? []).map((post) => ({ ...post, likedByMe: Boolean(post.likedByMe) })));
       } finally {
         if (isMounted) {
           setIsFeedLoading(false);
@@ -516,6 +914,50 @@ export default function FeedPage() {
       isMounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    try {
+      const rawRecentSearches = localStorage.getItem(RECENT_SEARCHES_KEY);
+      if (!rawRecentSearches) {
+        return;
+      }
+
+      const parsedRecentSearches = JSON.parse(rawRecentSearches) as unknown;
+      if (!Array.isArray(parsedRecentSearches)) {
+        return;
+      }
+
+      const sanitizedRecentSearches = parsedRecentSearches
+        .filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+        .slice(0, MAX_RECENT_SEARCHES);
+
+      setRecentSearches(sanitizedRecentSearches);
+    } catch {
+      setRecentSearches([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isSearchFocused) {
+      return;
+    }
+
+    const handleClickOutsideSearch = (event: MouseEvent) => {
+      const target = event.target as Node | null;
+      if (!target) {
+        return;
+      }
+      if (searchContainerRef.current?.contains(target)) {
+        return;
+      }
+      setIsSearchFocused(false);
+    };
+
+    document.addEventListener("mousedown", handleClickOutsideSearch);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutsideSearch);
+    };
+  }, [isSearchFocused]);
 
   useEffect(() => {
     let isMounted = true;
@@ -573,15 +1015,18 @@ export default function FeedPage() {
   };
 
   useEffect(() => {
-    if (!isDrawerMounted) {
-      return;
+    if (isDrawerMounted || isCommentsSheetMounted) {
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = "";
+      };
     }
 
-    document.body.style.overflow = "hidden";
+    document.body.style.overflow = "";
     return () => {
       document.body.style.overflow = "";
     };
-  }, [isDrawerMounted]);
+  }, [isDrawerMounted, isCommentsSheetMounted]);
 
   useEffect(() => {
     if (!isDrawerVisible) {
@@ -603,12 +1048,226 @@ export default function FeedPage() {
   }, [isDrawerVisible]);
 
   useEffect(() => {
+    if (!isCommentsSheetVisible) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        closeCommentsSheet();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isCommentsSheetVisible]);
+
+  useEffect(() => {
     return () => {
       if (drawerCloseTimerRef.current) {
         clearTimeout(drawerCloseTimerRef.current);
       }
+      if (commentsSheetCloseTimerRef.current) {
+        clearTimeout(commentsSheetCloseTimerRef.current);
+      }
     };
   }, []);
+
+  const updatePostCommentCount = (postId: string, totalCount: number) => {
+    setFeedPosts((previousPosts) =>
+      previousPosts.map((existingPost) => (existingPost.id === postId ? { ...existingPost, comments: totalCount } : existingPost)),
+    );
+    setActiveCommentsPost((existingPost) => (existingPost && existingPost.id === postId ? { ...existingPost, comments: totalCount } : existingPost));
+  };
+
+  const updatePostHeartState = (postId: string, likedByMe: boolean, heartCount: number) => {
+    setFeedPosts((previousPosts) =>
+      previousPosts.map((existingPost) =>
+        existingPost.id === postId ? { ...existingPost, likedByMe, hearts: Math.max(0, heartCount) } : existingPost,
+      ),
+    );
+    setActiveCommentsPost((existingPost) =>
+      existingPost && existingPost.id === postId
+        ? { ...existingPost, likedByMe, hearts: Math.max(0, heartCount) }
+        : existingPost,
+    );
+  };
+
+  const updateCommentHeartState = (commentId: string, likedByMe: boolean, heartCount: number) => {
+    setCommentThreads((previousThreads) =>
+      previousThreads.map((thread) => {
+        if (thread.id === commentId) {
+          return {
+            ...thread,
+            likedByMe,
+            heartCount: Math.max(0, heartCount),
+          };
+        }
+
+        return {
+          ...thread,
+          replies: thread.replies.map((reply) =>
+            reply.id === commentId
+              ? {
+                  ...reply,
+                  likedByMe,
+                  heartCount: Math.max(0, heartCount),
+                }
+              : reply,
+          ),
+        };
+      }),
+    );
+  };
+
+  const loadPostComments = async (post: FeedPost) => {
+    const numericPostId = parseNumericPostId(post.id);
+    if (!numericPostId) {
+      setCommentsError("Unable to load comments for this post.");
+      return;
+    }
+
+    setCommentsLoading(true);
+    setCommentsError(null);
+    setExpandedReplyThreadIds([]);
+
+    try {
+      const response = await fetch(`/api/posts/${numericPostId}/comments`);
+      if (!response.ok) {
+        const payload = (await response.json()) as { error?: string };
+        setCommentsError(payload.error ?? "Unable to load comments.");
+        return;
+      }
+
+      const payload = (await response.json()) as { comments?: CommentThread[]; totalCount?: number };
+      setCommentThreads(payload.comments ?? []);
+      updatePostCommentCount(post.id, payload.totalCount ?? 0);
+    } catch {
+      setCommentsError("Unable to load comments.");
+    } finally {
+      setCommentsLoading(false);
+    }
+  };
+
+  const openCommentsSheet = (post: FeedPost) => {
+    if (commentsSheetCloseTimerRef.current) {
+      clearTimeout(commentsSheetCloseTimerRef.current);
+      commentsSheetCloseTimerRef.current = null;
+    }
+
+    setActiveCommentsPost(post);
+    setCommentDraft("");
+    setReplyingToThreadId(null);
+    setReplyingToLabel(null);
+    setCommentThreads([]);
+    setCommentsError(null);
+    setIsCommentsSheetMounted(true);
+    requestAnimationFrame(() => setIsCommentsSheetVisible(true));
+    void loadPostComments(post);
+  };
+
+  const closeCommentsSheet = () => {
+    setIsCommentsSheetVisible(false);
+    commentsSheetCloseTimerRef.current = setTimeout(() => {
+      setIsCommentsSheetMounted(false);
+      setActiveCommentsPost(null);
+      setCommentThreads([]);
+      setExpandedReplyThreadIds([]);
+      setReplyingToThreadId(null);
+      setReplyingToLabel(null);
+      commentsSheetCloseTimerRef.current = null;
+    }, 300);
+  };
+
+  const handleSubmitComment = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const post = activeCommentsPost;
+    const text = commentDraft.trim();
+
+    if (!post || !text || isSubmittingComment) {
+      return;
+    }
+
+    const numericPostId = parseNumericPostId(post.id);
+    if (!numericPostId) {
+      setCommentsError("Unable to add comment.");
+      return;
+    }
+
+    setIsSubmittingComment(true);
+    setCommentsError(null);
+
+    try {
+      const response = await fetch(`/api/posts/${numericPostId}/comments`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ text, parentCommentId: replyingToThreadId ?? undefined }),
+      });
+
+      const payload = (await response.json()) as {
+        error?: string;
+        comment?: {
+          id: string;
+          text: string;
+          publishedAgo: string;
+          parentCommentId: string | null;
+          heartCount?: number;
+          likedByMe?: boolean;
+          author: CommentAuthor;
+        };
+        totalCount?: number;
+      };
+
+      if (!response.ok || !payload.comment) {
+        setCommentsError(payload.error ?? "Unable to add comment.");
+        return;
+      }
+
+      const createdComment: CommentReply & { parentCommentId: string | null } = {
+        ...payload.comment,
+        parentCommentId: payload.comment.parentCommentId,
+        heartCount: payload.comment.heartCount ?? 0,
+        likedByMe: payload.comment.likedByMe ?? false,
+      };
+      const isReplyAttempt = Boolean(replyingToThreadId);
+      if (isReplyAttempt && !createdComment.parentCommentId) {
+        setCommentsError("Reply could not be saved as a threaded reply. Please ensure the latest database migration is applied.");
+        return;
+      }
+      setCommentThreads((previousThreads) => {
+        if (!createdComment.parentCommentId) {
+          return [...previousThreads, { ...createdComment, replies: [] }];
+        }
+
+        return previousThreads.map((thread) => {
+          const isParentThread = thread.id === createdComment.parentCommentId;
+          const isParentReply = thread.replies.some((reply) => reply.id === createdComment.parentCommentId);
+
+          if (!isParentThread && !isParentReply) {
+            return thread;
+          }
+
+          return {
+            ...thread,
+            replies: [...thread.replies, { ...createdComment }],
+          };
+        });
+      });
+      const localTotalCount = commentThreads.reduce((count, thread) => count + 1 + thread.replies.length, 0) + 1;
+      updatePostCommentCount(post.id, payload.totalCount ?? localTotalCount);
+      setCommentDraft("");
+      setReplyingToThreadId(null);
+      setReplyingToLabel(null);
+    } catch {
+      setCommentsError("Unable to add comment.");
+    } finally {
+      setIsSubmittingComment(false);
+    }
+  };
 
   const handleLogout = async () => {
     if (isLoggingOut) {
@@ -630,10 +1289,158 @@ export default function FeedPage() {
     router.push("/new-post");
   };
 
+  const persistRecentSearches = (nextRecentSearches: string[]) => {
+    setRecentSearches(nextRecentSearches);
+    localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(nextRecentSearches));
+  };
+
+  const saveRecentSearch = (rawSearch: string) => {
+    const trimmedSearch = rawSearch.trim();
+    if (!trimmedSearch) {
+      return;
+    }
+
+    setRecentSearches((previousRecentSearches) => {
+      const nextRecentSearches = [
+        trimmedSearch,
+        ...previousRecentSearches.filter((item) => item.toLowerCase() !== trimmedSearch.toLowerCase()),
+      ].slice(0, MAX_RECENT_SEARCHES);
+      localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(nextRecentSearches));
+      return nextRecentSearches;
+    });
+  };
+
+  const handleSearchSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!searchValue.trim()) {
+      return;
+    }
+    saveRecentSearch(searchValue);
+    setIsSearchFocused(false);
+  };
+
+  const handleRemoveRecentSearch = (valueToRemove: string) => {
+    const nextRecentSearches = recentSearches.filter((item) => item !== valueToRemove);
+    persistRecentSearches(nextRecentSearches);
+  };
+
+  const handleToggleReplies = (threadId: string) => {
+    setExpandedReplyThreadIds((previousThreadIds) =>
+      previousThreadIds.includes(threadId)
+        ? previousThreadIds.filter((existingThreadId) => existingThreadId !== threadId)
+        : [...previousThreadIds, threadId],
+    );
+  };
+
+  const handleReplyToComment = (threadId: string, label: string) => {
+    setReplyingToThreadId(threadId);
+    setReplyingToLabel(label);
+    setReplyFocusNonce((previous) => previous + 1);
+  };
+
+  const handleTogglePostHeart = async (postId: string) => {
+    if (postHeartPendingIds.includes(postId)) {
+      return;
+    }
+
+    const post = feedPosts.find((existingPost) => existingPost.id === postId);
+    if (!post) {
+      return;
+    }
+
+    const numericPostId = parseNumericPostId(postId);
+    if (!numericPostId) {
+      return;
+    }
+
+    const nextLikedByMe = !post.likedByMe;
+    const optimisticCount = nextLikedByMe ? post.hearts + 1 : Math.max(0, post.hearts - 1);
+    updatePostHeartState(postId, nextLikedByMe, optimisticCount);
+    setPostHeartPendingIds((previousIds) => [...previousIds, postId]);
+
+    try {
+      const response = await fetch(`/api/posts/${numericPostId}/heart`, {
+        method: nextLikedByMe ? "POST" : "DELETE",
+      });
+      const payload = (await response.json()) as { error?: string; likedByMe?: boolean; heartCount?: number };
+      if (!response.ok || typeof payload.likedByMe !== "boolean" || typeof payload.heartCount !== "number") {
+        updatePostHeartState(postId, post.likedByMe, post.hearts);
+        return;
+      }
+
+      updatePostHeartState(postId, payload.likedByMe, payload.heartCount);
+    } catch {
+      updatePostHeartState(postId, post.likedByMe, post.hearts);
+    } finally {
+      setPostHeartPendingIds((previousIds) => previousIds.filter((existingId) => existingId !== postId));
+    }
+  };
+
+  const handleToggleCommentHeart = async (commentId: string) => {
+    if (commentHeartPendingIds.includes(commentId)) {
+      return;
+    }
+
+    const post = activeCommentsPost;
+    const numericPostId = post ? parseNumericPostId(post.id) : null;
+    if (!post || !numericPostId) {
+      return;
+    }
+
+    let currentLikeState: { likedByMe: boolean; heartCount: number } | null = null;
+    for (const thread of commentThreads) {
+      if (thread.id === commentId) {
+        currentLikeState = {
+          likedByMe: Boolean(thread.likedByMe),
+          heartCount: thread.heartCount ?? 0,
+        };
+        break;
+      }
+      const reply = thread.replies.find((existingReply) => existingReply.id === commentId);
+      if (reply) {
+        currentLikeState = {
+          likedByMe: Boolean(reply.likedByMe),
+          heartCount: reply.heartCount ?? 0,
+        };
+        break;
+      }
+    }
+
+    if (!currentLikeState) {
+      return;
+    }
+
+    const nextLikedByMe = !currentLikeState.likedByMe;
+    const optimisticCount = nextLikedByMe
+      ? currentLikeState.heartCount + 1
+      : Math.max(0, currentLikeState.heartCount - 1);
+    updateCommentHeartState(commentId, nextLikedByMe, optimisticCount);
+    setCommentHeartPendingIds((previousIds) => [...previousIds, commentId]);
+
+    try {
+      const response = await fetch(`/api/posts/${numericPostId}/comments/${commentId}/heart`, {
+        method: nextLikedByMe ? "POST" : "DELETE",
+      });
+      const payload = (await response.json()) as { error?: string; likedByMe?: boolean; heartCount?: number };
+      if (!response.ok || typeof payload.likedByMe !== "boolean" || typeof payload.heartCount !== "number") {
+        updateCommentHeartState(commentId, currentLikeState.likedByMe, currentLikeState.heartCount);
+        return;
+      }
+
+      updateCommentHeartState(commentId, payload.likedByMe, payload.heartCount);
+    } catch {
+      updateCommentHeartState(commentId, currentLikeState.likedByMe, currentLikeState.heartCount);
+    } finally {
+      setCommentHeartPendingIds((previousIds) => previousIds.filter((existingId) => existingId !== commentId));
+    }
+  };
+
+  const showRecentsPopup = isSearchFocused && recentSearches.length > 0;
+
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,_#fffdf7_0%,_#f8f6f1_50%,_#efe9dc_100%)] px-0 text-[#182a17]">
-      <section className="relative flex min-h-screen w-full flex-col overflow-x-hidden border border-[#e7e0d2] bg-[#f8f6f1] shadow-[0_24px_80px_rgba(56,71,45,0.12)]">
-        <header className="fixed left-0 right-0 top-0 z-30 mx-auto flex w-full max-w-[390px] items-center justify-between border-b border-black/10 bg-white p-4">
+    <main className="client-main min-h-screen bg-[radial-gradient(circle_at_top,_#fffdf7_0%,_#f8f6f1_50%,_#efe9dc_100%)] px-0 text-[#182a17]">
+      <section className="client-shell relative flex min-h-screen w-full flex-col overflow-x-hidden border border-[#e7e0d2] bg-[#f8f6f1] shadow-[0_24px_80px_rgba(56,71,45,0.12)]">
+        <header className="client-header fixed left-0 right-0 top-0 z-30 flex w-full items-center justify-between border-b border-black/10 bg-white p-4">
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -656,13 +1463,81 @@ export default function FeedPage() {
             >
               <PlusIcon />
             </button>
-            <button type="button" className="rounded-full bg-[#f5f5f5] p-2 text-[#7a7a7a]" aria-label="Notifications">
+            <button
+              type="button"
+              className="rounded-full bg-[#f5f5f5] p-2 text-[#7a7a7a]"
+              aria-label="Notifications"
+              onClick={() => router.push("/notifications")}
+            >
               <BellIcon />
             </button>
           </div>
         </header>
 
-        <div className="flex flex-col gap-6 px-4 pb-8 pt-[88px]">
+        <div ref={searchContainerRef} className="fixed left-0 right-0 top-[72px] z-20 mx-auto w-full max-w-[390px] px-4 pt-4">
+          <form
+            className="w-full rounded-[100px] border border-black/5 bg-white px-3 py-2"
+            onSubmit={handleSearchSubmit}
+            role="search"
+          >
+            <div className="flex min-h-[32px] items-center gap-3 rounded-[8px] px-2">
+              <span className="text-[#33333380]">
+                <SearchIcon />
+              </span>
+              <input
+                value={searchValue}
+                onChange={(event) => setSearchValue(event.target.value)}
+                onFocus={() => setIsSearchFocused(true)}
+                placeholder="Search for a specific plant"
+                aria-label="Search for a specific plant"
+                className="w-full bg-transparent text-[14px] leading-5 text-[#333333] placeholder:text-[#33333380] outline-none"
+              />
+              {searchValue ? (
+                <button
+                  type="button"
+                  className="rounded-full p-1 text-[#737373]"
+                  aria-label="Clear search"
+                  onClick={() => setSearchValue("")}
+                >
+                  <SmallXIcon />
+                </button>
+              ) : null}
+            </div>
+          </form>
+
+          {showRecentsPopup ? (
+            <div className="mt-3 w-full rounded-2xl border border-black/10 bg-white shadow-[0_2px_4px_rgba(0,0,0,0.1)]">
+              <p className="px-4 pb-3 pt-3 text-[14px] font-medium leading-5 text-[#333333]">Recents</p>
+              <ul className="px-2 pb-2">
+                {recentSearches.map((recentSearch) => (
+                  <li key={recentSearch} className="relative">
+                    <button
+                      type="button"
+                      className="flex w-full items-center gap-2 rounded-lg px-4 py-3 pr-11 text-left hover:bg-[#f7f7f7]"
+                      onClick={() => {
+                        setSearchValue(recentSearch);
+                        saveRecentSearch(recentSearch);
+                        setIsSearchFocused(false);
+                      }}
+                    >
+                      <span className="flex-1 text-[14px] font-medium leading-5 text-[#333333cc]">{recentSearch}</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full p-1 text-[#737373]"
+                      aria-label={`Remove ${recentSearch} from recent searches`}
+                      onClick={() => handleRemoveRecentSearch(recentSearch)}
+                    >
+                      <SmallXIcon />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+        </div>
+
+        <div className="flex flex-col gap-6 px-4 pb-8 pt-[152px]">
           {isFeedLoading ? (
             <div className="rounded-[12px] border border-black/10 bg-white p-4 text-[14px] text-[#525252]">Loading feed...</div>
           ) : null}
@@ -672,7 +1547,13 @@ export default function FeedPage() {
             </div>
           ) : null}
           {feedPosts.map((post) => (
-            <FeedCard key={post.id} post={post} />
+            <FeedCard
+              key={post.id}
+              isHeartPending={postHeartPendingIds.includes(post.id)}
+              onOpenComments={openCommentsSheet}
+              onToggleHeart={handleTogglePostHeart}
+              post={post}
+            />
           ))}
         </div>
 
@@ -688,13 +1569,13 @@ export default function FeedPage() {
                 onClick={closeDrawer}
               />
 
-              <div className="absolute inset-y-0 left-0 flex w-full">
+              <div className="pointer-events-none absolute inset-y-0 left-0 flex">
                 <aside
                   ref={drawerRef}
                   role="dialog"
                   aria-modal="true"
                   aria-labelledby="menu-drawer-title"
-                  className={`relative z-10 flex h-screen w-[calc(100%-64px)] max-w-[326px] flex-col bg-white p-4 shadow-[0_20px_24px_rgba(10,13,18,0.08),0_8px_8px_rgba(10,13,18,0.03),0_3px_3px_rgba(10,13,18,0.04)] transition-transform duration-300 ${
+                  className={`pointer-events-auto relative z-10 flex h-screen w-[calc(100%-64px)] min-w-[326px] max-w-[326px] flex-col bg-white p-4 shadow-[0_20px_24px_rgba(10,13,18,0.08),0_8px_8px_rgba(10,13,18,0.03),0_3px_3px_rgba(10,13,18,0.04)] transition-transform duration-300 ${
                     isDrawerVisible ? "translate-x-0" : "-translate-x-full"
                   }`}
                 >
@@ -788,6 +1669,29 @@ export default function FeedPage() {
               </div>
             </div>
           </div>
+        ) : null}
+
+        {isCommentsSheetMounted ? (
+          <CommentsSheet
+            commentThreads={commentThreads}
+            commentHeartPendingIds={commentHeartPendingIds}
+            commentsError={commentsError}
+            commentsLoading={commentsLoading}
+            currentUser={drawerProfile}
+            draftComment={commentDraft}
+            expandedReplyThreadIds={expandedReplyThreadIds}
+            isSubmittingComment={isSubmittingComment}
+            isVisible={isCommentsSheetVisible}
+            onClose={closeCommentsSheet}
+            onDraftCommentChange={setCommentDraft}
+            onReplyToComment={handleReplyToComment}
+            onSubmitComment={handleSubmitComment}
+            onToggleCommentHeart={handleToggleCommentHeart}
+            onToggleReplies={handleToggleReplies}
+            post={activeCommentsPost}
+            replyFocusNonce={replyFocusNonce}
+            replyingToLabel={replyingToLabel}
+          />
         ) : null}
       </section>
     </main>
