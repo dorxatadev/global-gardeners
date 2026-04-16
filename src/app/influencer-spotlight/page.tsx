@@ -169,12 +169,20 @@ export default function InfluencerSpotlightPage() {
       router.push("/feed");
       return;
     }
+    if (item.label === "My Garden") {
+      router.push("/my-garden");
+      return;
+    }
     if (item.label === "Guides") {
       router.push("/guides");
       return;
     }
     if (item.label === "Notifications") {
       router.push("/notifications");
+      return;
+    }
+    if (item.label === "Settings") {
+      router.push("/settings");
     }
   };
 

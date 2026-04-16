@@ -180,12 +180,20 @@ export default function GuidesPage() {
       router.push("/feed");
       return;
     }
+    if (item.label === "My Garden") {
+      router.push("/my-garden");
+      return;
+    }
     if (item.label === "Influencer Spotlight") {
       router.push("/influencer-spotlight");
       return;
     }
     if (item.label === "Notifications") {
       router.push("/notifications");
+      return;
+    }
+    if (item.label === "Settings") {
+      router.push("/settings");
     }
   };
 
@@ -214,9 +222,7 @@ export default function GuidesPage() {
             >
               <MenuIcon />
             </button>
-            <h1 className="text-[24px] font-semibold leading-[28.8px] tracking-[-1px] text-[#31674c]">
-              Global Gardners
-            </h1>
+            <h1 className="text-[24px] font-semibold leading-[28.8px] tracking-[-1px] text-[#31674c]">Global Gardeners</h1>
           </div>
 
           <button

@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
@@ -57,13 +56,14 @@ export default function PhotoConfirmationPage() {
     <main className="client-main min-h-screen bg-[radial-gradient(circle_at_top,_#fffdf7_0%,_#f8f6f1_50%,_#efe9dc_100%)] px-0 sm:grid sm:place-items-center sm:px-8">
       <section className="client-shell relative mx-auto flex min-h-screen w-full max-w-[390px] flex-col overflow-hidden border border-[#e7e0d2] bg-white shadow-[0_24px_80px_rgba(56,71,45,0.12)]">
         <header className="client-header relative z-10 flex items-center border-b border-black/10 bg-white p-4">
-          <Link
-            href="/onboarding/new-post/camera"
+          <button
+            type="button"
             aria-label="Close confirmation"
             className="inline-flex h-10 w-10 items-center justify-center transition"
+            onClick={() => router.back()}
           >
             <Image src="/icons/back-button.svg" alt="" aria-hidden="true" width={40} height={40} className="h-10 w-10" />
-          </Link>
+          </button>
         </header>
 
         <div className="relative flex-1 bg-black">

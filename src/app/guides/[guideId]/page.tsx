@@ -58,7 +58,7 @@ export default function GuideDetailPage() {
         <div className="flex flex-1 flex-col px-4 pb-[140px] pt-4">
           <button
             type="button"
-            onClick={() => router.push("/guides")}
+            onClick={() => router.back()}
             className="mb-6 inline-flex w-fit items-center gap-3 text-[#333333cc]"
           >
             <Image src="/icons/back-button.svg" alt="" aria-hidden="true" width={40} height={40} className="h-10 w-10" />

@@ -39,12 +39,7 @@ function getInitials(fullName: string) {
 }
 
 function BellIcon() {
-  return (
-    <svg aria-hidden="true" className="h-6 w-6" fill="none" viewBox="0 0 24 24">
-      <path d="M13.0823 20.625C13.2894 20.2663 13.7481 20.1435 14.1067 20.3506C14.4655 20.5577 14.5883 21.0163 14.3812 21.375C14.1398 21.7929 13.7932 22.1405 13.3753 22.3818C12.9574 22.6231 12.4829 22.7499 12.0003 22.75C11.5178 22.75 11.0432 22.623 10.6253 22.3818C10.2073 22.1405 9.85984 21.793 9.61847 21.375C9.41134 21.0163 9.53418 20.5577 9.89288 20.3506C10.2516 20.1435 10.7102 20.2663 10.9173 20.625C11.027 20.815 11.1853 20.9723 11.3753 21.082C11.5653 21.1917 11.7809 21.25 12.0003 21.25C12.2196 21.2499 12.4354 21.1917 12.6253 21.082C12.8151 20.9724 12.9727 20.8148 13.0823 20.625Z" fill="currentColor" />
-      <path d="M17.2496 8C17.2496 6.60779 16.6969 5.27262 15.7125 4.28809C14.728 3.30352 13.392 2.75 11.9996 2.75C10.6073 2.75007 9.27223 3.30358 8.28772 4.28809C7.30323 5.27264 6.74963 6.60767 6.74963 8C6.74963 10.3279 6.38421 11.9327 5.80628 13.1562C5.2337 14.3683 4.47511 15.1507 3.81604 15.8311L3.776 15.8906C3.76542 15.9124 3.75748 15.9359 3.75354 15.96C3.74582 16.0076 3.75265 16.0564 3.7721 16.1006C3.7916 16.1448 3.82343 16.1825 3.86389 16.209C3.90447 16.2355 3.95216 16.25 4.00061 16.25H20.0006C20.0487 16.2499 20.096 16.2361 20.1364 16.21C20.1769 16.1836 20.2095 16.1458 20.2291 16.1016C20.2487 16.0573 20.2545 16.0078 20.2467 15.96C20.239 15.9122 20.2177 15.8678 20.1852 15.832C19.5247 15.1513 18.7654 14.3687 18.193 13.1572C17.6148 11.9335 17.2496 10.328 17.2496 8Z" fill="currentColor" />
-    </svg>
-  );
+  return <img src="/icons/settings-bell.svg" alt="" aria-hidden="true" className="h-6 w-6" />;
 }
 
 function MenuIcon() {
@@ -366,6 +361,10 @@ export default function ProfilePage() {
       router.push("/feed");
       return;
     }
+    if (item.label === "My Garden") {
+      router.push("/my-garden");
+      return;
+    }
     if (item.label === "Guides") {
       router.push("/guides");
       return;
@@ -376,6 +375,10 @@ export default function ProfilePage() {
     }
     if (item.label === "Notifications") {
       router.push("/notifications");
+      return;
+    }
+    if (item.label === "Settings") {
+      router.push("/settings");
     }
   };
 
@@ -432,7 +435,7 @@ export default function ProfilePage() {
             >
               <MenuIcon />
             </button>
-            <h1 className="text-[24px] font-semibold leading-[28.8px] tracking-[-1px] text-[#31674c]">Global Gardners</h1>
+            <h1 className="text-[24px] font-semibold leading-[28.8px] tracking-[-1px] text-[#31674c]">Global Gardeners</h1>
           </div>
           <button
             type="button"

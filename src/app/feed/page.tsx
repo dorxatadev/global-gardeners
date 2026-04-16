@@ -1306,6 +1306,11 @@ export default function FeedPage() {
       closeDrawer();
       return;
     }
+    if (item.label === "My Garden") {
+      closeDrawer();
+      router.push("/my-garden");
+      return;
+    }
     if (item.label === "Guides") {
       closeDrawer();
       router.push("/guides");
@@ -1320,6 +1325,10 @@ export default function FeedPage() {
       closeDrawer();
       router.push("/notifications");
       return;
+    }
+    if (item.label === "Settings") {
+      closeDrawer();
+      router.push("/settings");
     }
   };
 
