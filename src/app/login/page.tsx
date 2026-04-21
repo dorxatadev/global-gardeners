@@ -249,7 +249,7 @@ export default function LoginPage() {
                 />
                 Keep me signed in
               </label>
-              <a href="#" className="font-medium text-[#333333cc] underline underline-offset-2">
+              <a href="/forgot-password" className="font-medium text-[#333333cc] underline underline-offset-2">
                 Forgot password?
               </a>
             </div>

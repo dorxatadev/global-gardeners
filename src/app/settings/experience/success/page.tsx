@@ -54,7 +54,7 @@ export default function OnboardingSuccessPage() {
           </div>
         </div>
 
-        <div className="absolute bottom-0 left-0 right-0 bg-[#f8f6f1] px-4 pb-4 pt-5">
+        <div className="fixed bottom-0 left-0 right-0 z-30 w-full bg-[#f8f6f1] px-4 pb-4 pt-5">
           <button
             type="button"
             className="flex h-[52px] w-full items-center justify-center rounded-full bg-[#457941] text-[14px] font-medium leading-5 text-[#fafafa] transition hover:bg-[#3b6838]"
@@ -67,3 +67,4 @@ export default function OnboardingSuccessPage() {
     </main>
   );
 }
+

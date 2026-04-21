@@ -103,7 +103,7 @@ export default function ClimatePage() {
           </div>
         </div>
 
-        <div className="absolute bottom-0 left-0 right-0 bg-[#f8f6f1] px-4 pb-4 pt-5">
+        <div className="fixed bottom-0 left-0 right-0 z-30 w-full bg-[#f8f6f1] px-4 pb-4 pt-5">
           <button
             type="button"
             disabled={!canFinish}
@@ -123,3 +123,4 @@ export default function ClimatePage() {
     </main>
   );
 }
+

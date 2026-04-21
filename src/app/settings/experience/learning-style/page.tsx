@@ -119,7 +119,7 @@ export default function LearningStylePage() {
           </div>
         </div>
 
-        <div className="absolute bottom-0 left-0 right-0 bg-[#f8f6f1] px-4 pb-4 pt-5">
+        <div className="fixed bottom-0 left-0 right-0 z-30 w-full bg-[#f8f6f1] px-4 pb-4 pt-5">
           <button
             type="button"
             disabled={!canContinue}
@@ -139,3 +139,4 @@ export default function LearningStylePage() {
     </main>
   );
 }
+

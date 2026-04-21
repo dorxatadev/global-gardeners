@@ -314,7 +314,13 @@ export default function InfluencerSpotlightPage() {
                         </div>
                         <p className="text-center text-[12px] font-medium leading-4 text-[#333333cc]">Mario shares practical tips on indoor plant care, propagation.</p>
                       </div>
-                      <button type="button" className="h-8 w-full rounded-[100px] bg-[#f5f5f5] text-[14px] font-medium leading-5 text-black">View videos</button>
+                      <button
+                        type="button"
+                        onClick={() => router.push("/influencer-spotlight/past-creator")}
+                        className="h-8 w-full rounded-[100px] bg-[#f5f5f5] text-[14px] font-medium leading-5 text-black"
+                      >
+                        View videos
+                      </button>
                     </div>
                   </article>
                 ))}

@@ -9,11 +9,8 @@ const iconUser = "/icons/settings-edit-profile.svg";
 const iconKey = "/icons/settings-change-password.svg";
 const iconSparkles = "/icons/settings-setup-your-experience.svg";
 const iconBellRing = "/icons/settings-plant-care-reminders.svg";
-const iconUsers = "/icons/settings-community-activity.svg";
-const iconShield = "/icons/settings-account-and-security.svg";
 const iconLanguages = "/icons/settings-language.svg";
 const iconThermometer = "/icons/settings-temperature-unit.svg";
-const iconEyeOff = "/icons/settings-private-profile.svg";
 const iconAlert = "/icons/settings-report-a-problem.svg";
 const iconSprout = "/icons/settings-about-global-gardener.svg";
 const iconLogout = "/icons/logout.svg";
@@ -42,33 +39,25 @@ const settingsSections: SettingSection[] = [
     rows: [
       { label: "Edit profile", icon: iconUser },
       { label: "Change password", icon: iconKey },
-      { label: "Set up your experience", icon: iconSparkles },
+    ],
+  },
+  {
+    title: "Preferences",
+    rows: [
+      { label: "Personalize your experience", icon: iconSparkles },
+      { label: "Language", icon: iconLanguages },
+      { label: "Units & measurements", icon: iconThermometer },
     ],
   },
   {
     title: "Notifications",
-    rows: [
-      { label: "Plant care reminders", icon: iconBellRing },
-      { label: "Community activity", icon: iconUsers },
-      { label: "Account & security", icon: iconShield },
-    ],
-  },
-  {
-    title: "Language & Region",
-    rows: [
-      { label: "Language", icon: iconLanguages },
-      { label: "Temperature unit", icon: iconThermometer },
-    ],
-  },
-  {
-    title: "Privacy",
-    rows: [{ label: "Private profile", icon: iconEyeOff }],
+    rows: [{ label: "Notifications", icon: iconBellRing }],
   },
   {
     title: "Support",
     rows: [
       { label: "Report a problem", icon: iconAlert },
-      { label: "About Global Gardener", icon: iconSprout },
+      { label: "About Global Gardeners", icon: iconSprout },
     ],
   },
 ];
@@ -236,8 +225,32 @@ export default function SettingsPage() {
                       router.push("/profile/edit");
                       return;
                     }
-                    if (row.label === "Set up your experience") {
+                    if (row.label === "Change password") {
+                      router.push("/settings/change-password");
+                      return;
+                    }
+                    if (row.label === "Personalize your experience") {
                       router.push("/settings/experience");
+                      return;
+                    }
+                    if (row.label === "Language") {
+                      router.push("/settings/language");
+                      return;
+                    }
+                    if (row.label === "Notifications") {
+                      router.push("/settings/notifications");
+                      return;
+                    }
+                    if (row.label === "Report a problem") {
+                      router.push("/settings/report-problem");
+                      return;
+                    }
+                    if (row.label === "About Global Gardeners") {
+                      router.push("/settings/about");
+                      return;
+                    }
+                    if (row.label === "Units & measurements") {
+                      router.push("/settings/units-measurements");
                     }
                   }}
                 >

@@ -252,7 +252,11 @@ export default function MyGardenPage() {
                   Add plants to unlock insights and track your growth.
                 </p>
               </div>
-              <button type="button" className="h-9 w-full rounded-[1000px] bg-[#457941] px-4 py-2 text-[14px] font-medium leading-5 text-[#fafafa]">
+              <button
+                type="button"
+                className="h-9 w-full rounded-[1000px] bg-[#457941] px-4 py-2 text-[14px] font-medium leading-5 text-[#fafafa]"
+                onClick={() => router.push("/my-garden/add-plant")}
+              >
                 Add plant
               </button>
             </section>
@@ -270,7 +274,18 @@ export default function MyGardenPage() {
               </button>
             </div>
             <div className="flex items-center gap-3 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              <article className="flex h-[231px] w-[160px] shrink-0 flex-col items-center justify-center gap-4 rounded-[12px] border border-black/10 bg-white p-4">
+              <article
+                className="flex h-[231px] w-[160px] shrink-0 cursor-pointer flex-col items-center justify-center gap-4 rounded-[12px] border border-black/10 bg-white p-4"
+                role="button"
+                tabIndex={0}
+                onClick={() => router.push("/my-garden/add-plant")}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    router.push("/my-garden/add-plant");
+                  }
+                }}
+              >
                 <div className="flex h-12 w-12 items-center justify-center rounded-[132px] bg-[#31674c] p-[10.667px]">
                   <img src={imgAddIcon} alt="" className="h-[21.33px] w-[21.33px]" />
                 </div>

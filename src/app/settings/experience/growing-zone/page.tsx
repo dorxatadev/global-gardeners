@@ -251,7 +251,7 @@ export default function GrowingZonePage() {
           ) : null}
         </div>
 
-        <div className="absolute bottom-0 left-0 right-0 flex flex-col gap-2 bg-[#f8f6f1] px-4 pb-4 pt-5">
+        <div className="fixed bottom-0 left-0 right-0 z-30 flex w-full flex-col gap-2 bg-[#f8f6f1] px-4 pb-4 pt-5">
           <button
             type="button"
             disabled={!canContinue}
@@ -286,3 +286,4 @@ export default function GrowingZonePage() {
     </main>
   );
 }
+
